@@ -226,4 +226,45 @@ final class IslandAITests: XCTestCase {
         chat.append(.init(role: .assistant, text: "hi"), at: Date(timeIntervalSince1970: 90_000))
         XCTAssertEqual(chat.createdAt, first, "Later messages don't move it")
     }
+
+    func testEchoOfLoocalsOwnWordsNeverCutsItOff() {
+        let echo = Set(TurnTaking.words("The strata bakes for about forty minutes."))
+        XCTAssertFalse(TurnTaking.isInterruption("about forty minutes", echo: echo, talkingFor: 1.5))
+        XCTAssertEqual(TurnTaking.strippingEcho("forty minutes wait what temperature", echo: echo), "wait what temperature")
+    }
+
+    func testBackchannelsKeepLoocalTalkingButRealWordsCutIn() {
+        let echo: Set<String> = ["leeks", "butter"]
+        XCTAssertFalse(TurnTaking.isInterruption("yeah mm-hmm", echo: echo, talkingFor: 0.4))
+        XCTAssertFalse(TurnTaking.isInterruption("Ouais", echo: echo, talkingFor: 0.3))
+        XCTAssertTrue(TurnTaking.isInterruption("Wait,", echo: echo, talkingFor: 0.2), "One stop word is enough")
+        XCTAssertTrue(TurnTaking.isInterruption("Attends !", echo: echo, talkingFor: 0.2))
+        XCTAssertTrue(TurnTaking.isInterruption("what about cheese", echo: echo, talkingFor: 0.3))
+        XCTAssertFalse(TurnTaking.isInterruption("cheese", echo: echo, talkingFor: 0.2), "A lone word needs a sustained voice")
+        XCTAssertTrue(TurnTaking.isInterruption("cheese", echo: echo, talkingFor: 0.8))
+    }
+
+    func testPlainWordsAskForTheCalendarWithoutAnIsland() {
+        XCTAssertTrue(SourceIntent.wanted("Check my calendar").contains(Connector.calendar.id))
+        XCTAssertTrue(SourceIntent.wanted("What I have going on next month").contains(Connector.calendar.id))
+        XCTAssertTrue(SourceIntent.wanted("Qu’est-ce que j’ai demain ?").contains(Connector.calendar.id))
+        XCTAssertTrue(SourceIntent.wanted("Show my reminders").contains(Connector.reminders.id))
+        XCTAssertTrue(SourceIntent.wanted("How tall is the Eiffel Tower?").isEmpty)
+    }
+
+    func testCalendarWindowFollowsTheWords() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        calendar.firstWeekday = 2
+        let day = { (y: Int, m: Int, d: Int) in calendar.date(from: DateComponents(year: y, month: m, day: d))! }
+        let now = calendar.date(from: DateComponents(year: 2026, month: 11, day: 22, hour: 10))! // a Sunday
+        let month = SourceIntent.calendarWindow(for: "What I have going on next month", now: now, calendar: calendar)
+        XCTAssertEqual([month.start, month.end], [day(2026, 12, 1), day(2027, 1, 1)])
+        let tomorrow = SourceIntent.calendarWindow(for: "anything tomorrow?", now: now, calendar: calendar)
+        XCTAssertEqual([tomorrow.start, tomorrow.end], [day(2026, 11, 23), day(2026, 11, 24)])
+        let week = SourceIntent.calendarWindow(for: "plan next week", now: now, calendar: calendar)
+        XCTAssertEqual([week.start, week.end], [day(2026, 11, 23), day(2026, 11, 30)])
+        XCTAssertEqual(SourceIntent.calendarWindow(for: "my next 10 days", now: now, calendar: calendar).end, day(2026, 12, 3))
+        XCTAssertEqual(SourceIntent.calendarWindow(for: "Check my calendar", now: now, calendar: calendar).end, day(2026, 11, 29))
+    }
 }

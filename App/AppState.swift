@@ -517,7 +517,7 @@ final class AppState {
     }
 
     /// What the app around the model can do, so it never claims it can't look things up.
-    static let capabilities = "You run inside Loocal, on the user's iPhone. Loocal itself can: search the web and read links, find places near the user and travel times with Apple Maps (using their location), do exact maths and date counts, translate, add reminders and calendar events, run their Shortcuts, and remember things. When Loocal has done one of these for this message, its results are above: use them. Never say you have no location, internet or calendar access. If a request needs one of these and no result is above, ask them to say it plainly, for example “find restaurants near me”."
+    static let capabilities = "You run inside Loocal, on the user's iPhone. Loocal itself can: search the web and read links, find places near the user and travel times with Apple Maps (using their location), do exact maths and date counts, translate, read the user's calendar and reminders and add to them, run their Shortcuts, and remember things. When Loocal has done one of these for this message, its results are above: use them. Never say you have no location, internet or calendar access. Anything about the user's own life (their events, reminders, plans) must come from results above: never make it up. If they ask about their calendar and no calendar is above, say Loocal couldn't read it. If a request needs one of these and no result is above, ask them to say it plainly, for example “find restaurants near me”."
 
     /// Everything Loocal works out before a spoken answer, whichever model gives it:
     /// actions done, tool results, memory and web results.
@@ -531,6 +531,9 @@ final class AppState {
         }
         let found = await ToolBelt.run(for: question) { _ in }
         if !found.isEmpty { parts.append(found) }
+        let (asked, refusal) = await ConnectorHub.resolve(SourceIntent.wanted(question), ask: false)
+        if !asked.isEmpty { parts.append(await ConnectorHub.context(for: asked, prompt: question)) }
+        if !refusal.isEmpty { parts.append(refusal) }
         if (activeConnectors.contains(Connector.web.id) && WebSearch.wantsSearch(question)) || WebSearch.explicitlyAsked(question) {
             let query = WebSearch.searchQuery(from: question)
             parts.append((await Self.call(WebSearch.definition, arguments: WebSearch.arguments(for: query))).output + "\nAnswer in a few spoken sentences.")
@@ -693,8 +696,13 @@ final class AppState {
         jobs[replyID] = Task {
             var success = false
             do {
+                // "Check my calendar" reads the calendar even without an island; a source that
+                // isn't allowed is named to the model so it says so instead of inventing.
+                let (asked, refusal) = await ConnectorHub.resolve(SourceIntent.wanted(question).subtracting(active), ask: true)
+                let active = active.union(asked)
                 // Built-in connectors are read right before the reply and join the system prompt.
                 var system = system
+                if !refusal.isEmpty { system += "\n\n" + refusal }
                 let read = Connector.builtIn.filter { active.contains($0.id) && $0.id != Connector.web.id && $0.id != Connector.maps.id }
                 if !read.isEmpty {
                     await setPhase(replyID, "Checking your sources")
@@ -949,17 +957,22 @@ final class AppState {
 
     /// Fetches what an errand reads, in parallel with every other errand on the go.
     private func prepare(_ run: ErrandRun) {
-        let active = Set(run.sources).subtracting([Connector.web.id]) // the web is searched while writing
-        let names = connectors.filter { active.contains($0.id) }.map(\.name)
+        let picked = Set(run.sources).subtracting([Connector.web.id]) // the web is searched while writing
         let demo = isDemo
         errandContexts[run.id] = Task { [weak self] in
-            guard let self, !active.isEmpty else { return "" }
+            guard let self else { return "" }
+            // "What have I got next month" reads the calendar even if no source was picked.
+            let (asked, refusal) = demo ? ([], "") : await ConnectorHub.resolve(SourceIntent.wanted(run.instructions).subtracting(picked), ask: false)
+            let active = picked.union(asked)
+            guard !active.isEmpty else { return refusal }
+            let names = self.connectors.filter { active.contains($0.id) }.map(\.name)
             self.desk.setStage(run.id, "Reading " + ListFormatter.localizedString(byJoining: names))
             var context = ""
             if demo {
                 try? await Task.sleep(for: .seconds(Double.random(in: 0.8...2.2)))
             } else {
                 context = await ConnectorHub.context(for: active, prompt: run.instructions)
+                if !refusal.isEmpty { context += (context.isEmpty ? "" : "\n\n") + refusal }
             }
             if self.desk.runs.first(where: { $0.id == run.id })?.status == .queued { self.desk.setStage(run.id, ErrandRun.nextUp) }
             return context

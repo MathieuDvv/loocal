@@ -12,6 +12,7 @@
 		0C8E79533853BFC13D0F5FD6 /* PebbleShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A93A19005CB149465B4F81 /* PebbleShape.swift */; };
 		136F488D86D3CB4F17F1A640 /* VoiceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */; };
 		1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 2EFC775D79FAA810A07FC584 /* MLXLLM */; };
+		146C3E5C757B217457692BAF /* Duplex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C95C03FC296086FAED5CBF1 /* Duplex.swift */; };
 		1FC1E3C87C397890E14C2BC1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89540703F336453E33FF870C /* AppState.swift */; };
 		20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */; };
 		21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -131,6 +132,7 @@
 		600331AAF9BCE3400C4A2C87 /* AttachMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachMenu.swift; sourceTree = "<group>"; };
 		622E1453DDB5C2933C04F898 /* IslandActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandActivity.swift; sourceTree = "<group>"; };
 		653CD09EBA0E45B6698638FA /* Errands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Errands.swift; sourceTree = "<group>"; };
+		6C95C03FC296086FAED5CBF1 /* Duplex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Duplex.swift; sourceTree = "<group>"; };
 		713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralVoices.swift; sourceTree = "<group>"; };
 		75DA7D97720043E121C40794 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		78B4F4D0D4352D22486C7B11 /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 				E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */,
 				038CD122BC9D0155BEA30854 /* ConversationMock.swift */,
 				A879FE06EA59ED8F7145E251 /* ConversationView.swift */,
+				6C95C03FC296086FAED5CBF1 /* Duplex.swift */,
 				653CD09EBA0E45B6698638FA /* Errands.swift */,
 				B510754321D34D88A6C0745B /* ErrandVoice.swift */,
 				87AFFA346D470E5B565BB57B /* Handwriting.swift */,
@@ -488,6 +491,7 @@
 				20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */,
 				BDFB450B7C3609F5B2C2CFAC /* ConversationMock.swift in Sources */,
 				9925B5EB86416C0BC6024D08 /* ConversationView.swift in Sources */,
+				146C3E5C757B217457692BAF /* Duplex.swift in Sources */,
 				CD507D0B4709AB33F0F7FA3F /* ErrandVoice.swift in Sources */,
 				952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */,
 				E111E174E3575366B91AC573 /* Handwriting.swift in Sources */,
