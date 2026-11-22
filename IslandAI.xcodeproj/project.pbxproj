@@ -27,6 +27,7 @@
 		6FA2E9E136A7280F42103590 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 56AF7C53B4769D02685C4B69 /* MLXLMCommon */; };
 		758B476B9673E2C8AD003884 /* ModelManifest.json in Resources */ = {isa = PBXBuildFile; fileRef = A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */; };
 		875469A8D7731A5C4803F0B1 /* IslandAIUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */; };
+		8EE51A3EFAF488A0EBB538AD /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
 		8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
 		952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653CD09EBA0E45B6698638FA /* Errands.swift */; };
 		97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8276B61D49085B45D50D16D5 /* IslandApp.swift */; };
@@ -35,7 +36,7 @@
 		AC64771E0C75CED968F124D1 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = 58EC7F8B908C0C25A7066F5F /* MLXVLM */; };
 		B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75DA7D97720043E121C40794 /* RootView.swift */; };
 		B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0499323687BFB77CDBEB840A /* ModelCompatibility.swift */; };
-		B4689893A5B1B5716C07FDBF /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
+		B4689893A5B1B5716C07FDBF /* MLXNN in Frameworks */ = {isa = PBXBuildFile; productRef = D31998FB6AD68E158E288CA9 /* MLXNN */; };
 		B8548426EEDD231A58DCF07E /* OFL-InstrumentSerif.txt in Resources */ = {isa = PBXBuildFile; fileRef = A0044CE97D05884D5953658E /* OFL-InstrumentSerif.txt */; };
 		B9A48668D9B725D8E6FB4EE8 /* VoiceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */; };
 		BB914262298BE61C61804B9D /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
@@ -166,7 +167,8 @@
 				6FA2E9E136A7280F42103590 /* MLXLMCommon in Frameworks */,
 				1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */,
 				F234EE4F8032415A54FB5D7E /* MLX in Frameworks */,
-				B4689893A5B1B5716C07FDBF /* KokoroSwift in Frameworks */,
+				B4689893A5B1B5716C07FDBF /* MLXNN in Frameworks */,
+				8EE51A3EFAF488A0EBB538AD /* KokoroSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,6 +339,7 @@
 				56AF7C53B4769D02685C4B69 /* MLXLMCommon */,
 				2EFC775D79FAA810A07FC584 /* MLXLLM */,
 				FA117BFC99B2E3BDF985F912 /* MLX */,
+				D31998FB6AD68E158E288CA9 /* MLXNN */,
 				EC91100881F7FCCFF46F5B75 /* KokoroSwift */,
 			);
 			productName = IslandAI;
@@ -903,6 +906,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
 			productName = MLXVLM;
+		};
+		D31998FB6AD68E158E288CA9 /* MLXNN */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLXNN;
 		};
 		EC91100881F7FCCFF46F5B75 /* KokoroSwift */ = {
 			isa = XCSwiftPackageProductDependency;

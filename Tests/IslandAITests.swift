@@ -164,4 +164,35 @@ final class IslandAITests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: staging.appendingPathComponent("model.safetensors"), encoding: .utf8), "own")
         XCTAssertFalse(staging.path.hasPrefix(root.path + "/"), "The load folder must sit outside the model folder")
     }
+
+    func testMemoryPlanSizesTheKVCacheFromTheModelConfig() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let qwen = #"{"model_type":"qwen3_vl","text_config":{"num_hidden_layers":36,"num_attention_heads":32,"num_key_value_heads":8,"head_dim":128}}"#
+        try Data(qwen.utf8).write(to: root.appendingPathComponent("config.json"))
+        try Data(count: 4096).write(to: root.appendingPathComponent("model.safetensors"))
+        let plan = try MemoryPlan(model: .standard, directory: root)
+        XCTAssertEqual(plan.weightBytes, 4096)
+        XCTAssertEqual(plan.kvPerToken, 36 * 8 * 128 * 4)
+        XCTAssertEqual(plan.fixedKV, 0)
+        // A finished reply has nothing left to claim; a fresh one claims its whole length.
+        XCTAssertEqual(plan.remaining(generated: ModelSpec.maxOutputTokens), 0)
+        XCTAssertGreaterThan(plan.need(prompt: 2048, photo: false), plan.need(prompt: 256, photo: false))
+        // Short contexts stay bf16; a long one switches to 8 bits, about half the bytes.
+        XCTAssertEqual(plan.cache(512), plan.kvPerToken * 512)
+        XCTAssertLessThan(Double(plan.cache(2816)), Double(plan.kvPerToken * 2816) * 0.55)
+        XCTAssertEqual(plan.remaining(generated: 0), plan.kvPerToken * ModelSpec.maxOutputTokens)
+    }
+
+    func testMemoryPlanBoundsGemmaSlidingLayers() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let gemma = #"{"model_type":"gemma3_text","num_hidden_layers":48,"num_attention_heads":16,"num_key_value_heads":8,"head_dim":256,"sliding_window":1024,"sliding_window_pattern":6}"#
+        try Data(gemma.utf8).write(to: root.appendingPathComponent("config.json"))
+        let plan = try MemoryPlan(model: .large, directory: root)
+        XCTAssertEqual(plan.kvPerToken, 8 * 8 * 256 * 4) // only the 8 global layers grow
+        XCTAssertEqual(plan.fixedKV, 40 * 8 * 256 * 4 * 1024)
+    }
 }

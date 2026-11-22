@@ -65,7 +65,14 @@ enum IslandError: LocalizedError {
 enum MemoryHeadroom {
     /// Stop generating below this, rather than let iOS terminate the app mid-reply.
     static let floor = 180 * 1024 * 1024
-    static var bytes: Int { os_proc_available_memory() }
+    static var bytes: Int {
+        let available = os_proc_available_memory()
+        most.withLock { $0 = max($0, available) }
+        return available
+    }
+    /// The most this app has had free since launch: about all iOS will ever let it use.
+    static var ceiling: Int { most.withLock { max($0, os_proc_available_memory()) } }
+    private static let most = OSAllocatedUnfairLock(initialState: 0)
     static var megabytes: Int { bytes / (1024 * 1024) }
 }
 

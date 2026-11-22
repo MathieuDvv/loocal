@@ -61,6 +61,7 @@ final class AppState {
     var canSend: Bool { download.isReady && !isBusy && (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachmentName != nil || !attachedFiles.isEmpty) }
 
     init() throws {
+        _ = MemoryHeadroom.bytes // notes how much iOS lets Loocal use, before any model loads
         let files = try LocalFiles()
         self.files = files
         desk = ErrandDesk(directory: files.root)

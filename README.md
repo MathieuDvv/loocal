@@ -90,6 +90,15 @@ The 8B vision model is intentionally substantial for a phone. The source does no
 - Prompt character guard: 6,000 characters, with the actual token count checked before inference.
 - A fresh KV cache is created per reply. Model and GPU cache are released when each job finishes. Older turns are automatically omitted when needed to fit the input budget. A single overlong prompt is rejected with a clear message.
 
+**How memory is kept down** (`App/InferenceEngine.swift`):
+
+- *Vision tower on disk.* Qwen3 VL's vision tower is stored unquantized (bf16). Loocal loads the language model itself and leaves the vision weights as lazy arrays over the model file: they're read in only for a reply with a photo, then put back. Loading is faster and its peak no longer includes them.
+- *Prompt read in steps, without next-word scores.* The stock Qwen path read the whole prompt in one pass and computed vocabulary scores (152k words) for every prompt token, about 600 MB at 2,048 tokens. The prompt now goes in 512-token steps (128 when tight) and only the KV cache is evaluated.
+- *8-bit KV cache past 1,024 tokens.* Short chats keep a bf16 cache, which is faster; long ones switch to 8 bits, about half the memory.
+- *Check before loading.* A model that can't fit in what iOS gives Loocal is refused with a message, not loaded until iOS kills the app. Memory from a model just released is waited for (it returns within about a second).
+
+Measured on an iPhone Air with the 8B, old engine → new: free memory after a short reply 466 MB → 1,566 MB; a 1,500-token prompt was killed by iOS → finished with 1,090 MB left; load 4.0 s → 2.8 s; writing speed about the same (8.5–8.9 tokens/s).
+
 The recent-history limit is deliberate. Older messages remain in the saved transcript but are not all sent to the model. The app is a local chat client, not a permanently running HTTP server.
 
 ## Build and verify
