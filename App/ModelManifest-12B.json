@@ -1,0 +1,51 @@
+{
+  "repository": "mlx-community/gemma-3-12b-it-qat-abliterated-lm-4bit",
+  "revision": "c4b17f2792bc4782a7365f0c33f13013281bd22e",
+  "files": [
+    {
+      "name": "chat_template.jinja",
+      "size": 1532,
+      "sha256": null
+    },
+    {
+      "name": "config.json",
+      "size": 1152,
+      "sha256": null
+    },
+    {
+      "name": "generation_config.json",
+      "size": 168,
+      "sha256": null
+    },
+    {
+      "name": "model-00001-of-00002.safetensors",
+      "size": 5357465200,
+      "sha256": "a96ab72bed4b61a026e10a39bb77bdde56a835b20b6ab0069331b0309f9c4e77"
+    },
+    {
+      "name": "model-00002-of-00002.safetensors",
+      "size": 1999038214,
+      "sha256": "26b078241a0f28c326ad1601b47b06a7cc32195dd902c5f87f9e2af386d794db"
+    },
+    {
+      "name": "model.safetensors.index.json",
+      "size": 112557,
+      "sha256": null
+    },
+    {
+      "name": "special_tokens_map.json",
+      "size": 662,
+      "sha256": null
+    },
+    {
+      "name": "tokenizer.json",
+      "size": 33384568,
+      "sha256": "4667f2089529e8e7657cfb6d1c19910ae71ff5f28aa7ab2ff2763330affad795"
+    },
+    {
+      "name": "tokenizer_config.json",
+      "size": 1155387,
+      "sha256": null
+    }
+  ]
+}

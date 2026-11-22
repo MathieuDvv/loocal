@@ -1,0 +1,76 @@
+{
+  "repository": "veeceey/Huihui-Qwen3-VL-8B-Instruct-abliterated-mlx-4bit",
+  "revision": "5da6bcf64013f3c81dba671088873361f1b27684",
+  "files": [
+    {
+      "name": "added_tokens.json",
+      "size": 735,
+      "sha256": null
+    },
+    {
+      "name": "chat_template.jinja",
+      "size": 5292,
+      "sha256": null
+    },
+    {
+      "name": "config.json",
+      "size": 2027,
+      "sha256": null
+    },
+    {
+      "name": "generation_config.json",
+      "size": 226,
+      "sha256": null
+    },
+    {
+      "name": "model-00001-of-00002.safetensors",
+      "size": 5353972151,
+      "sha256": "f7afa72889638d3828fcd9f7128ce340ca55d149c997033412e2f1da3a0e1a28"
+    },
+    {
+      "name": "model-00002-of-00002.safetensors",
+      "size": 406693049,
+      "sha256": "c216339973a9488d1841e06ec1b7ed6a7080bf6cd5bd5dd5adb38b1e857f8318"
+    },
+    {
+      "name": "model.safetensors.index.json",
+      "size": 121590,
+      "sha256": null
+    },
+    {
+      "name": "preprocessor_config.json",
+      "size": 821,
+      "sha256": null
+    },
+    {
+      "name": "processor_config.json",
+      "size": 1331,
+      "sha256": null
+    },
+    {
+      "name": "special_tokens_map.json",
+      "size": 644,
+      "sha256": null
+    },
+    {
+      "name": "tokenizer.json",
+      "size": 11422650,
+      "sha256": "be75606093db2094d7cd20f3c2f385c212750648bd6ea4fb2bf507a6a4c55506"
+    },
+    {
+      "name": "tokenizer_config.json",
+      "size": 389,
+      "sha256": null
+    },
+    {
+      "name": "video_preprocessor_config.json",
+      "size": 858,
+      "sha256": null
+    },
+    {
+      "name": "vocab.json",
+      "size": 2776833,
+      "sha256": null
+    }
+  ]
+}

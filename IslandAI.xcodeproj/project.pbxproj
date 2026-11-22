@@ -1,0 +1,875 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		016266670CB51C68B2F64D91 /* ModelSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */; };
+		136F488D86D3CB4F17F1A640 /* VoiceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */; };
+		1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 2EFC775D79FAA810A07FC584 /* MLXLLM */; };
+		1FC1E3C87C397890E14C2BC1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89540703F336453E33FF870C /* AppState.swift */; };
+		20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */; };
+		21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		30A94069FC37428167BF5A54 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C71349CFF13171A2E55320 /* Theme.swift */; };
+		4EE5CB7A137FD195F29564F3 /* SpiralLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229E58158AD92116CD41ADB1 /* SpiralLoader.swift */; };
+		554DA5C2F34F46ED42A54646 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */; };
+		56903B691344120556BB2941 /* AudioLines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D39C08CE2E7A866A9842C14 /* AudioLines.swift */; };
+		5A1FAFB15B385B1D2FDEFAE5 /* ModelSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA835091533EFEC116B7DD0B /* ModelSpec.swift */; };
+		66CE71A971E822C2D21AEB47 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CF22D9037BE70F82E748D64 /* SettingsView.swift */; };
+		6E96F0D63CF4EAE681DEEE55 /* ModelDownload.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4BA4312590D86DAD8D87991 /* ModelDownload.swift */; };
+		6FA2E9E136A7280F42103590 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 56AF7C53B4769D02685C4B69 /* MLXLMCommon */; };
+		758B476B9673E2C8AD003884 /* ModelManifest.json in Resources */ = {isa = PBXBuildFile; fileRef = A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */; };
+		875469A8D7731A5C4803F0B1 /* IslandAIUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */; };
+		8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
+		97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8276B61D49085B45D50D16D5 /* IslandApp.swift */; };
+		9925B5EB86416C0BC6024D08 /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A879FE06EA59ED8F7145E251 /* ConversationView.swift */; };
+		99A6E4E39C143EB2B4D34E1E /* InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */; };
+		AC64771E0C75CED968F124D1 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = 58EC7F8B908C0C25A7066F5F /* MLXVLM */; };
+		B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75DA7D97720043E121C40794 /* RootView.swift */; };
+		B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0499323687BFB77CDBEB840A /* ModelCompatibility.swift */; };
+		B4689893A5B1B5716C07FDBF /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
+		B9A48668D9B725D8E6FB4EE8 /* VoiceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */; };
+		BB914262298BE61C61804B9D /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
+		BDFB450B7C3609F5B2C2CFAC /* ConversationMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038CD122BC9D0155BEA30854 /* ConversationMock.swift */; };
+		C1CB937C015BD1943F56C535 /* AttachMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 600331AAF9BCE3400C4A2C87 /* AttachMenu.swift */; };
+		C37920FFF7338DB869422BEC /* ModelManifest-12B.json in Resources */ = {isa = PBXBuildFile; fileRef = CD130294271BFDBFE7439F2D /* ModelManifest-12B.json */; };
+		C6835E22DC2A078BEA210B81 /* InferenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98188F04F715A4D855A9C698 /* InferenceEngine.swift */; };
+		C78FE146FF652F481EB922A1 /* IslandAITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 888CDB21A5E79F1F9B046FCA /* IslandAITests.swift */; };
+		C8CF5D110DCB12DBB35BDBC9 /* ModelManifest-4B.json in Resources */ = {isa = PBXBuildFile; fileRef = 1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */; };
+		D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE112B746F79F170DD202A0 /* Persona.swift */; };
+		DD49C1EF17756C7E87EE657E /* Geist-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */; };
+		DEEFD896F00008699064FA46 /* InstrumentSerif-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */; };
+		E111E174E3575366B91AC573 /* Handwriting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87AFFA346D470E5B565BB57B /* Handwriting.swift */; };
+		E3DB9083F86BCA7B5269DCCF /* OFL-Geist.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1C682F60E47498036B1A13FC /* OFL-Geist.txt */; };
+		EAECCCE973B4021F9965812E /* Speech.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836B53F972A12FC25F957205 /* Speech.swift */; };
+		EBB7A97CD3C427C3E3585DDB /* ActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35120B9AF11145D8D365941E /* ActivityController.swift */; };
+		F0A8CD412AA5CBD4004A455E /* NeuralVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */; };
+		F234EE4F8032415A54FB5D7E /* MLX in Frameworks */ = {isa = PBXBuildFile; productRef = FA117BFC99B2E3BDF985F912 /* MLX */; };
+		FA44867967FC588386898FFB /* SendControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC607114706BCC39FA6FEE51 /* SendControl.swift */; };
+		FCC9F5839986057BE79A3AB5 /* IslandActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 622E1453DDB5C2933C04F898 /* IslandActivity.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5E0CD63E3138F63849780341 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4481DD075C6147CD48490DD2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 94667A317E2016EAF3329C61;
+			remoteInfo = IslandAI;
+		};
+		AC9C9C8063E9084A33D8E386 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4481DD075C6147CD48490DD2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F891903F78B38A0FBC63D373;
+			remoteInfo = IslandActivity;
+		};
+		BDA46B839D5898B8B73AA547 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4481DD075C6147CD48490DD2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 94667A317E2016EAF3329C61;
+			remoteInfo = IslandAI;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		4E5B0E6727085910447F2701 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		038CD122BC9D0155BEA30854 /* ConversationMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationMock.swift; sourceTree = "<group>"; };
+		0499323687BFB77CDBEB840A /* ModelCompatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCompatibility.swift; sourceTree = "<group>"; };
+		09C5F928206A791EF728C6F9 /* KokoroSwift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = KokoroSwift; path = Vendor/KokoroSwift; sourceTree = SOURCE_ROOT; };
+		1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ModelManifest-4B.json"; sourceTree = "<group>"; };
+		1C682F60E47498036B1A13FC /* OFL-Geist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-Geist.txt"; sourceTree = "<group>"; };
+		229E58158AD92116CD41ADB1 /* SpiralLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiralLoader.swift; sourceTree = "<group>"; };
+		2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSettings.swift; sourceTree = "<group>"; };
+		28C71349CFF13171A2E55320 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		2918A7036AEB2BE8A68F1259 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; };
+		2CF22D9037BE70F82E748D64 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		35120B9AF11145D8D365941E /* ActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityController.swift; sourceTree = "<group>"; };
+		3EE112B746F79F170DD202A0 /* Persona.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persona.swift; sourceTree = "<group>"; };
+		46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceConversation.swift; sourceTree = "<group>"; };
+		4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Variable.ttf"; sourceTree = "<group>"; };
+		52DF1164C0FC428CA3505149 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = IslandActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		56F22ADBCFD16EF3DA90CADA /* IslandAI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IslandAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		600331AAF9BCE3400C4A2C87 /* AttachMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachMenu.swift; sourceTree = "<group>"; };
+		622E1453DDB5C2933C04F898 /* IslandActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandActivity.swift; sourceTree = "<group>"; };
+		713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralVoices.swift; sourceTree = "<group>"; };
+		75DA7D97720043E121C40794 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		7D39C08CE2E7A866A9842C14 /* AudioLines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLines.swift; sourceTree = "<group>"; };
+		8276B61D49085B45D50D16D5 /* IslandApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandApp.swift; sourceTree = "<group>"; };
+		836B53F972A12FC25F957205 /* Speech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Speech.swift; sourceTree = "<group>"; };
+		87AFFA346D470E5B565BB57B /* Handwriting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Handwriting.swift; sourceTree = "<group>"; };
+		888CDB21A5E79F1F9B046FCA /* IslandAITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandAITests.swift; sourceTree = "<group>"; };
+		89540703F336453E33FF870C /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceAttributes.swift; sourceTree = "<group>"; };
+		975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandAIUITests.swift; sourceTree = "<group>"; };
+		98188F04F715A4D855A9C698 /* InferenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceEngine.swift; sourceTree = "<group>"; };
+		A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ModelManifest.json; sourceTree = "<group>"; };
+		A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "InstrumentSerif-Italic.ttf"; sourceTree = "<group>"; };
+		A879FE06EA59ED8F7145E251 /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
+		BA835091533EFEC116B7DD0B /* ModelSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSpec.swift; sourceTree = "<group>"; };
+		C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelector.swift; sourceTree = "<group>"; };
+		CC607114706BCC39FA6FEE51 /* SendControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendControl.swift; sourceTree = "<group>"; };
+		CD130294271BFDBFE7439F2D /* ModelManifest-12B.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ModelManifest-12B.json"; sourceTree = "<group>"; };
+		D4BA4312590D86DAD8D87991 /* ModelDownload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelDownload.swift; sourceTree = "<group>"; };
+		D4C618DFD3763EE7405E3D03 /* IslandAI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = IslandAI.entitlements; sourceTree = "<group>"; };
+		D9652090DAC1DCA562179F1E /* IslandAIUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IslandAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
+		F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IslandAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		410600A48DB07E7F8F3798A5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AC64771E0C75CED968F124D1 /* MLXVLM in Frameworks */,
+				6FA2E9E136A7280F42103590 /* MLXLMCommon in Frameworks */,
+				1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */,
+				F234EE4F8032415A54FB5D7E /* MLX in Frameworks */,
+				B4689893A5B1B5716C07FDBF /* KokoroSwift in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		57E4DF77DD6052878EB19BB4 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				35120B9AF11145D8D365941E /* ActivityController.swift */,
+				89540703F336453E33FF870C /* AppState.swift */,
+				F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */,
+				600331AAF9BCE3400C4A2C87 /* AttachMenu.swift */,
+				7D39C08CE2E7A866A9842C14 /* AudioLines.swift */,
+				E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */,
+				038CD122BC9D0155BEA30854 /* ConversationMock.swift */,
+				A879FE06EA59ED8F7145E251 /* ConversationView.swift */,
+				87AFFA346D470E5B565BB57B /* Handwriting.swift */,
+				98188F04F715A4D855A9C698 /* InferenceEngine.swift */,
+				2918A7036AEB2BE8A68F1259 /* Info.plist */,
+				D4C618DFD3763EE7405E3D03 /* IslandAI.entitlements */,
+				8276B61D49085B45D50D16D5 /* IslandApp.swift */,
+				0499323687BFB77CDBEB840A /* ModelCompatibility.swift */,
+				D4BA4312590D86DAD8D87991 /* ModelDownload.swift */,
+				1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */,
+				CD130294271BFDBFE7439F2D /* ModelManifest-12B.json */,
+				A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */,
+				C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */,
+				BA835091533EFEC116B7DD0B /* ModelSpec.swift */,
+				713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */,
+				3EE112B746F79F170DD202A0 /* Persona.swift */,
+				75DA7D97720043E121C40794 /* RootView.swift */,
+				CC607114706BCC39FA6FEE51 /* SendControl.swift */,
+				2CF22D9037BE70F82E748D64 /* SettingsView.swift */,
+				836B53F972A12FC25F957205 /* Speech.swift */,
+				229E58158AD92116CD41ADB1 /* SpiralLoader.swift */,
+				28C71349CFF13171A2E55320 /* Theme.swift */,
+				46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */,
+				2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */,
+				7B69D82C5EADF2D318E976FE /* Fonts */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		6B2B9CDC3AF64AB199207CCC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */,
+				56F22ADBCFD16EF3DA90CADA /* IslandAI.app */,
+				F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */,
+				D9652090DAC1DCA562179F1E /* IslandAIUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7B69D82C5EADF2D318E976FE /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */,
+				A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */,
+				2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */,
+				1C682F60E47498036B1A13FC /* OFL-Geist.txt */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		8B78818AC951307CCF764E08 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		96DF71676A2A9466EF192E47 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				09C5F928206A791EF728C6F9 /* KokoroSwift */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		9EFA78525A495FAFEDC26D1A = {
+			isa = PBXGroup;
+			children = (
+				57E4DF77DD6052878EB19BB4 /* App */,
+				E4B1C193DB4B9BB35D56F64F /* IslandActivity */,
+				96DF71676A2A9466EF192E47 /* Packages */,
+				FAB30F3B44022AE3051CFF9C /* Shared */,
+				AE2AC69A0D9A00F4EE6FF7A6 /* Tests */,
+				8B78818AC951307CCF764E08 /* UITests */,
+				6B2B9CDC3AF64AB199207CCC /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AE2AC69A0D9A00F4EE6FF7A6 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				888CDB21A5E79F1F9B046FCA /* IslandAITests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		E4B1C193DB4B9BB35D56F64F /* IslandActivity */ = {
+			isa = PBXGroup;
+			children = (
+				52DF1164C0FC428CA3505149 /* Info.plist */,
+				622E1453DDB5C2933C04F898 /* IslandActivity.swift */,
+			);
+			path = IslandActivity;
+			sourceTree = "<group>";
+		};
+		FAB30F3B44022AE3051CFF9C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1020A359E12BAAECB6DF71B9 /* IslandAITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9D690A2DF3DA2C155039C9F4 /* Build configuration list for PBXNativeTarget "IslandAITests" */;
+			buildPhases = (
+				45FFA1F175F21095BB1C07A6 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				26660E96B2DDB0E2F2351516 /* PBXTargetDependency */,
+			);
+			name = IslandAITests;
+			packageProductDependencies = (
+			);
+			productName = IslandAITests;
+			productReference = F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		94667A317E2016EAF3329C61 /* IslandAI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FD2EF2ADBD5B34ACD452B734 /* Build configuration list for PBXNativeTarget "IslandAI" */;
+			buildPhases = (
+				46A020BD8A30862E53DFE3FC /* Sources */,
+				F0EF564CAE5FAA3A32FFF727 /* Resources */,
+				410600A48DB07E7F8F3798A5 /* Frameworks */,
+				4E5B0E6727085910447F2701 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				8D27C5BB1F25C19D983C9FD9 /* PBXTargetDependency */,
+			);
+			name = IslandAI;
+			packageProductDependencies = (
+				58EC7F8B908C0C25A7066F5F /* MLXVLM */,
+				56AF7C53B4769D02685C4B69 /* MLXLMCommon */,
+				2EFC775D79FAA810A07FC584 /* MLXLLM */,
+				FA117BFC99B2E3BDF985F912 /* MLX */,
+				EC91100881F7FCCFF46F5B75 /* KokoroSwift */,
+			);
+			productName = IslandAI;
+			productReference = 56F22ADBCFD16EF3DA90CADA /* IslandAI.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F891903F78B38A0FBC63D373 /* IslandActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F07369BA0A547DA68FA0E61A /* Build configuration list for PBXNativeTarget "IslandActivity" */;
+			buildPhases = (
+				516D3E57927CABDD211A05F0 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = IslandActivity;
+			packageProductDependencies = (
+			);
+			productName = IslandActivity;
+			productReference = 543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		FCFF42FC9984C6A9308F3065 /* IslandAIUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ABA7D39F6E6607DAF0F2E56D /* Build configuration list for PBXNativeTarget "IslandAIUITests" */;
+			buildPhases = (
+				51FF223FF31B9189C9ADA3B9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				527C727A1640A548E6B22659 /* PBXTargetDependency */,
+			);
+			name = IslandAIUITests;
+			packageProductDependencies = (
+			);
+			productName = IslandAIUITests;
+			productReference = D9652090DAC1DCA562179F1E /* IslandAIUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4481DD075C6147CD48490DD2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					1020A359E12BAAECB6DF71B9 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					94667A317E2016EAF3329C61 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					F891903F78B38A0FBC63D373 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					FCFF42FC9984C6A9308F3065 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = 94667A317E2016EAF3329C61;
+					};
+				};
+			};
+			buildConfigurationList = 90735FB8467FA1AA34F74019 /* Build configuration list for PBXProject "IslandAI" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9EFA78525A495FAFEDC26D1A;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */,
+				01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+				1E496FF6EE25D72429BDBB46 /* XCLocalSwiftPackageReference "Vendor/KokoroSwift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6B2B9CDC3AF64AB199207CCC /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				94667A317E2016EAF3329C61 /* IslandAI */,
+				1020A359E12BAAECB6DF71B9 /* IslandAITests */,
+				FCFF42FC9984C6A9308F3065 /* IslandAIUITests */,
+				F891903F78B38A0FBC63D373 /* IslandActivity */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F0EF564CAE5FAA3A32FFF727 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				554DA5C2F34F46ED42A54646 /* Assets.xcassets in Resources */,
+				DD49C1EF17756C7E87EE657E /* Geist-Variable.ttf in Resources */,
+				DEEFD896F00008699064FA46 /* InstrumentSerif-Italic.ttf in Resources */,
+				99A6E4E39C143EB2B4D34E1E /* InstrumentSerif-Regular.ttf in Resources */,
+				C37920FFF7338DB869422BEC /* ModelManifest-12B.json in Resources */,
+				C8CF5D110DCB12DBB35BDBC9 /* ModelManifest-4B.json in Resources */,
+				758B476B9673E2C8AD003884 /* ModelManifest.json in Resources */,
+				E3DB9083F86BCA7B5269DCCF /* OFL-Geist.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		45FFA1F175F21095BB1C07A6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C78FE146FF652F481EB922A1 /* IslandAITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		46A020BD8A30862E53DFE3FC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EBB7A97CD3C427C3E3585DDB /* ActivityController.swift in Sources */,
+				1FC1E3C87C397890E14C2BC1 /* AppState.swift in Sources */,
+				C1CB937C015BD1943F56C535 /* AttachMenu.swift in Sources */,
+				56903B691344120556BB2941 /* AudioLines.swift in Sources */,
+				20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */,
+				BDFB450B7C3609F5B2C2CFAC /* ConversationMock.swift in Sources */,
+				9925B5EB86416C0BC6024D08 /* ConversationView.swift in Sources */,
+				E111E174E3575366B91AC573 /* Handwriting.swift in Sources */,
+				8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */,
+				C6835E22DC2A078BEA210B81 /* InferenceEngine.swift in Sources */,
+				97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */,
+				B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */,
+				6E96F0D63CF4EAE681DEEE55 /* ModelDownload.swift in Sources */,
+				016266670CB51C68B2F64D91 /* ModelSelector.swift in Sources */,
+				5A1FAFB15B385B1D2FDEFAE5 /* ModelSpec.swift in Sources */,
+				F0A8CD412AA5CBD4004A455E /* NeuralVoices.swift in Sources */,
+				D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */,
+				B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */,
+				FA44867967FC588386898FFB /* SendControl.swift in Sources */,
+				66CE71A971E822C2D21AEB47 /* SettingsView.swift in Sources */,
+				EAECCCE973B4021F9965812E /* Speech.swift in Sources */,
+				4EE5CB7A137FD195F29564F3 /* SpiralLoader.swift in Sources */,
+				30A94069FC37428167BF5A54 /* Theme.swift in Sources */,
+				136F488D86D3CB4F17F1A640 /* VoiceConversation.swift in Sources */,
+				B9A48668D9B725D8E6FB4EE8 /* VoiceSettings.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		516D3E57927CABDD211A05F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB914262298BE61C61804B9D /* InferenceAttributes.swift in Sources */,
+				FCC9F5839986057BE79A3AB5 /* IslandActivity.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		51FF223FF31B9189C9ADA3B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				875469A8D7731A5C4803F0B1 /* IslandAIUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		26660E96B2DDB0E2F2351516 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 94667A317E2016EAF3329C61 /* IslandAI */;
+			targetProxy = BDA46B839D5898B8B73AA547 /* PBXContainerItemProxy */;
+		};
+		527C727A1640A548E6B22659 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 94667A317E2016EAF3329C61 /* IslandAI */;
+			targetProxy = 5E0CD63E3138F63849780341 /* PBXContainerItemProxy */;
+		};
+		8D27C5BB1F25C19D983C9FD9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F891903F78B38A0FBC63D373 /* IslandActivity */;
+			targetProxy = AC9C9C8063E9084A33D8E386 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		11A537FCBADF9C47624F06D4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.IslandAIUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = IslandAI;
+			};
+			name = Release;
+		};
+		1D6741C755F21FD0933B7738 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/IslandAI.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		34E131081FA5EC954949E179 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.IslandAITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/IslandAI.app/IslandAI";
+			};
+			name = Debug;
+		};
+		54C8EAC867F1BED82C26330C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/IslandAI.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		6279CAC2B65F73F81CDB492C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				INFOPLIST_FILE = IslandActivity/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.app.activity;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		76ED001A0E62576C5310F331 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		AE5C69B274B6CCE25FB503A6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				INFOPLIST_FILE = IslandActivity/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.app.activity;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B46000D15A3914031C84BFF2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.IslandAITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/IslandAI.app/IslandAI";
+			};
+			name = Release;
+		};
+		D2F7B22608DAEB861790D99D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.IslandAIUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = IslandAI;
+			};
+			name = Debug;
+		};
+		ED5081D799978F84F0F6B2B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		90735FB8467FA1AA34F74019 /* Build configuration list for PBXProject "IslandAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				76ED001A0E62576C5310F331 /* Debug */,
+				ED5081D799978F84F0F6B2B4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9D690A2DF3DA2C155039C9F4 /* Build configuration list for PBXNativeTarget "IslandAITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34E131081FA5EC954949E179 /* Debug */,
+				B46000D15A3914031C84BFF2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		ABA7D39F6E6607DAF0F2E56D /* Build configuration list for PBXNativeTarget "IslandAIUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D2F7B22608DAEB861790D99D /* Debug */,
+				11A537FCBADF9C47624F06D4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F07369BA0A547DA68FA0E61A /* Build configuration list for PBXNativeTarget "IslandActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AE5C69B274B6CCE25FB503A6 /* Debug */,
+				6279CAC2B65F73F81CDB492C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FD2EF2ADBD5B34ACD452B734 /* Build configuration list for PBXNativeTarget "IslandAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1D6741C755F21FD0933B7738 /* Debug */,
+				54C8EAC867F1BED82C26330C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		1E496FF6EE25D72429BDBB46 /* XCLocalSwiftPackageReference "Vendor/KokoroSwift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Vendor/KokoroSwift;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
+			requirement = {
+				kind = exactVersion;
+				version = 2.29.3;
+			};
+		};
+		475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ml-explore/mlx-swift";
+			requirement = {
+				kind = exactVersion;
+				version = 0.29.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2EFC775D79FAA810A07FC584 /* MLXLLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLLM;
+		};
+		56AF7C53B4769D02685C4B69 /* MLXLMCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXLMCommon;
+		};
+		58EC7F8B908C0C25A7066F5F /* MLXVLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;
+			productName = MLXVLM;
+		};
+		EC91100881F7FCCFF46F5B75 /* KokoroSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = KokoroSwift;
+		};
+		FA117BFC99B2E3BDF985F912 /* MLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */;
+			productName = MLX;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4481DD075C6147CD48490DD2 /* Project object */;
+}

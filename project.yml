@@ -1,0 +1,87 @@
+---
+name: IslandAI
+options:
+  bundleIdPrefix: local.islandai
+  deploymentTarget:
+    iOS: '26.0'
+packages:
+  MLXSwiftLM:
+    url: https://github.com/ml-explore/mlx-swift-lm
+    exactVersion: 2.29.3
+  MLXSwift:
+    url: https://github.com/ml-explore/mlx-swift
+    exactVersion: 0.29.1
+  # Kokoro-82M neural text-to-speech, vendored as a static package so MLX links once.
+  KokoroSwift:
+    path: Vendor/KokoroSwift
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    IPHONEOS_DEPLOYMENT_TARGET: '26.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    MARKETING_VERSION: '1.0'
+    CURRENT_PROJECT_VERSION: '1'
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+    DEVELOPMENT_TEAM: ""
+targets:
+  IslandAI:
+    type: application
+    platform: iOS
+    sources:
+    - App
+    - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.islandai.app
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/IslandAI.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+    - package: MLXSwiftLM
+      product: MLXVLM
+    - package: MLXSwiftLM
+      product: MLXLMCommon
+    - package: MLXSwiftLM
+      product: MLXLLM
+    - package: MLXSwift
+      product: MLX
+    - package: KokoroSwift
+      product: KokoroSwift
+    - target: IslandActivity
+    scheme:
+      testTargets:
+      - IslandAITests
+      - IslandAIUITests
+  IslandActivity:
+    type: app-extension
+    platform: iOS
+    sources:
+    - IslandActivity
+    - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.islandai.app.activity
+        INFOPLIST_FILE: IslandActivity/Info.plist
+        SKIP_INSTALL: true
+        APPLICATION_EXTENSION_API_ONLY: true
+  IslandAITests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+    - Tests
+    dependencies:
+    - target: IslandAI
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+  IslandAIUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+    - UITests
+    dependencies:
+    - target: IslandAI
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: 'YES'

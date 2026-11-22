@@ -1,0 +1,76 @@
+{
+  "repository": "EZCon/Huihui-Qwen3-VL-4B-Instruct-abliterated-4bit-mlx",
+  "revision": "37873a4d08c743a65c21d2071abe79497c00ec1d",
+  "files": [
+    {
+      "name": "added_tokens.json",
+      "size": 707,
+      "sha256": null
+    },
+    {
+      "name": "chat_template.jinja",
+      "size": 5292,
+      "sha256": null
+    },
+    {
+      "name": "config.json",
+      "size": 2457,
+      "sha256": null
+    },
+    {
+      "name": "generation_config.json",
+      "size": 213,
+      "sha256": null
+    },
+    {
+      "name": "merges.txt",
+      "size": 1671853,
+      "sha256": null
+    },
+    {
+      "name": "model.safetensors",
+      "size": 3093767521,
+      "sha256": "1a076993f92be84672d4581dc4c5ef541ecb048307adebd85c5ccdf311c79c94"
+    },
+    {
+      "name": "model.safetensors.index.json",
+      "size": 99972,
+      "sha256": null
+    },
+    {
+      "name": "preprocessor_config.json",
+      "size": 782,
+      "sha256": null
+    },
+    {
+      "name": "processor_config.json",
+      "size": 989,
+      "sha256": null
+    },
+    {
+      "name": "special_tokens_map.json",
+      "size": 613,
+      "sha256": null
+    },
+    {
+      "name": "tokenizer.json",
+      "size": 11422650,
+      "sha256": "be75606093db2094d7cd20f3c2f385c212750648bd6ea4fb2bf507a6a4c55506"
+    },
+    {
+      "name": "tokenizer_config.json",
+      "size": 418,
+      "sha256": null
+    },
+    {
+      "name": "video_preprocessor_config.json",
+      "size": 817,
+      "sha256": null
+    },
+    {
+      "name": "vocab.json",
+      "size": 2776833,
+      "sha256": null
+    }
+  ]
+}
