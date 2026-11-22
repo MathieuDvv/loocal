@@ -30,12 +30,9 @@ struct ConversationView: View {
 
     private var status: some View {
         HStack(spacing: 8) {
-            Circle().fill(mock.phase == .listening && !mock.muted ? Ink.primary : Ink.tertiary)
-                .frame(width: 6, height: 6)
-                .scaleEffect(mock.phase == .listening ? 1.3 : 1)
-                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: mock.phase == .listening)
             Text(statusText)
                 .font(.geist(14, .medium)).foregroundStyle(Ink.secondary)
+                .shimmer(!(mock.muted && mock.phase == .listening))
                 .contentTransition(.opacity)
         }
         .animation(.smooth(duration: 0.3), value: mock.phase)

@@ -7,6 +7,10 @@ struct Persona: Identifiable, Codable, Hashable, Sendable {
     var name: String
     var icon: String
     var prompt: String
+    /// The errand bot's body (a `BotShape` raw value) and colour (`BotTint`). Nil: the
+    /// shape this persona gets by its place in the list, in ink.
+    var shape: String? = nil
+    var tint: String? = nil
 
     static let limit = 3
     /// Icons offered in the editor. Monochrome SF Symbols that read well at 18 pt.

@@ -168,7 +168,7 @@ actor InferenceEngine {
                 total += tokens.count
                 let text = context.tokenizer.decode(tokens: tokens)
                 if round < 2, let call = ToolCall.parse(text), let tool = tools.first(where: { $0.tool.name == call.name }) {
-                    await phase("Using \(tool.tool.name)")
+                    await phase(WebSearch.isLocal(tool) ? "Searching the web" : "Using \(tool.tool.name)")
                     let output = (try? await callTool(tool, call.argumentsJSON)) ?? "The tool could not be reached."
                     toolTurns += [.assistant(text), .tool(String(output.prefix(1500)))]
                     continue

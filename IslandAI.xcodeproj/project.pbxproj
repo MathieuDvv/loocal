@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		016266670CB51C68B2F64D91 /* ModelSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */; };
+		03D075D2C1A9764BD604BD26 /* Pebble.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ECEF0BEEC272B8C21C77102 /* Pebble.swift */; };
 		136F488D86D3CB4F17F1A640 /* VoiceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */; };
 		1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 2EFC775D79FAA810A07FC584 /* MLXLLM */; };
 		1FC1E3C87C397890E14C2BC1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89540703F336453E33FF870C /* AppState.swift */; };
@@ -24,6 +25,7 @@
 		758B476B9673E2C8AD003884 /* ModelManifest.json in Resources */ = {isa = PBXBuildFile; fileRef = A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */; };
 		875469A8D7731A5C4803F0B1 /* IslandAIUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */; };
 		8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
+		952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653CD09EBA0E45B6698638FA /* Errands.swift */; };
 		97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8276B61D49085B45D50D16D5 /* IslandApp.swift */; };
 		9925B5EB86416C0BC6024D08 /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A879FE06EA59ED8F7145E251 /* ConversationView.swift */; };
 		99A6E4E39C143EB2B4D34E1E /* InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */; };
@@ -31,6 +33,7 @@
 		B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75DA7D97720043E121C40794 /* RootView.swift */; };
 		B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0499323687BFB77CDBEB840A /* ModelCompatibility.swift */; };
 		B4689893A5B1B5716C07FDBF /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
+		B8548426EEDD231A58DCF07E /* OFL-InstrumentSerif.txt in Resources */ = {isa = PBXBuildFile; fileRef = A0044CE97D05884D5953658E /* OFL-InstrumentSerif.txt */; };
 		B9A48668D9B725D8E6FB4EE8 /* VoiceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */; };
 		BB914262298BE61C61804B9D /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
 		BDFB450B7C3609F5B2C2CFAC /* ConversationMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038CD122BC9D0155BEA30854 /* ConversationMock.swift */; };
@@ -39,6 +42,7 @@
 		C6835E22DC2A078BEA210B81 /* InferenceEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98188F04F715A4D855A9C698 /* InferenceEngine.swift */; };
 		C78FE146FF652F481EB922A1 /* IslandAITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 888CDB21A5E79F1F9B046FCA /* IslandAITests.swift */; };
 		C8CF5D110DCB12DBB35BDBC9 /* ModelManifest-4B.json in Resources */ = {isa = PBXBuildFile; fileRef = 1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */; };
+		CD507D0B4709AB33F0F7FA3F /* ErrandVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B510754321D34D88A6C0745B /* ErrandVoice.swift */; };
 		D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE112B746F79F170DD202A0 /* Persona.swift */; };
 		DD49C1EF17756C7E87EE657E /* Geist-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */; };
 		DEEFD896F00008699064FA46 /* InstrumentSerif-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */; };
@@ -96,6 +100,7 @@
 		09C5F928206A791EF728C6F9 /* KokoroSwift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = KokoroSwift; path = Vendor/KokoroSwift; sourceTree = SOURCE_ROOT; };
 		1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ModelManifest-4B.json"; sourceTree = "<group>"; };
 		1C682F60E47498036B1A13FC /* OFL-Geist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-Geist.txt"; sourceTree = "<group>"; };
+		1ECEF0BEEC272B8C21C77102 /* Pebble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pebble.swift; sourceTree = "<group>"; };
 		229E58158AD92116CD41ADB1 /* SpiralLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiralLoader.swift; sourceTree = "<group>"; };
 		2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSettings.swift; sourceTree = "<group>"; };
 		28C71349CFF13171A2E55320 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -111,6 +116,7 @@
 		56F22ADBCFD16EF3DA90CADA /* IslandAI.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = IslandAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		600331AAF9BCE3400C4A2C87 /* AttachMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachMenu.swift; sourceTree = "<group>"; };
 		622E1453DDB5C2933C04F898 /* IslandActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandActivity.swift; sourceTree = "<group>"; };
+		653CD09EBA0E45B6698638FA /* Errands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Errands.swift; sourceTree = "<group>"; };
 		713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralVoices.swift; sourceTree = "<group>"; };
 		75DA7D97720043E121C40794 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		7D39C08CE2E7A866A9842C14 /* AudioLines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLines.swift; sourceTree = "<group>"; };
@@ -122,9 +128,11 @@
 		90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceAttributes.swift; sourceTree = "<group>"; };
 		975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandAIUITests.swift; sourceTree = "<group>"; };
 		98188F04F715A4D855A9C698 /* InferenceEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InferenceEngine.swift; sourceTree = "<group>"; };
+		A0044CE97D05884D5953658E /* OFL-InstrumentSerif.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-InstrumentSerif.txt"; sourceTree = "<group>"; };
 		A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = ModelManifest.json; sourceTree = "<group>"; };
 		A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "InstrumentSerif-Italic.ttf"; sourceTree = "<group>"; };
 		A879FE06EA59ED8F7145E251 /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
+		B510754321D34D88A6C0745B /* ErrandVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrandVoice.swift; sourceTree = "<group>"; };
 		BA835091533EFEC116B7DD0B /* ModelSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSpec.swift; sourceTree = "<group>"; };
 		C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelector.swift; sourceTree = "<group>"; };
 		CC607114706BCC39FA6FEE51 /* SendControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendControl.swift; sourceTree = "<group>"; };
@@ -164,6 +172,8 @@
 				E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */,
 				038CD122BC9D0155BEA30854 /* ConversationMock.swift */,
 				A879FE06EA59ED8F7145E251 /* ConversationView.swift */,
+				653CD09EBA0E45B6698638FA /* Errands.swift */,
+				B510754321D34D88A6C0745B /* ErrandVoice.swift */,
 				87AFFA346D470E5B565BB57B /* Handwriting.swift */,
 				98188F04F715A4D855A9C698 /* InferenceEngine.swift */,
 				2918A7036AEB2BE8A68F1259 /* Info.plist */,
@@ -177,6 +187,7 @@
 				C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */,
 				BA835091533EFEC116B7DD0B /* ModelSpec.swift */,
 				713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */,
+				1ECEF0BEEC272B8C21C77102 /* Pebble.swift */,
 				3EE112B746F79F170DD202A0 /* Persona.swift */,
 				75DA7D97720043E121C40794 /* RootView.swift */,
 				CC607114706BCC39FA6FEE51 /* SendControl.swift */,
@@ -209,6 +220,7 @@
 				A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */,
 				2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */,
 				1C682F60E47498036B1A13FC /* OFL-Geist.txt */,
+				A0044CE97D05884D5953658E /* OFL-InstrumentSerif.txt */,
 			);
 			path = Fonts;
 			sourceTree = "<group>";
@@ -417,6 +429,7 @@
 				C8CF5D110DCB12DBB35BDBC9 /* ModelManifest-4B.json in Resources */,
 				758B476B9673E2C8AD003884 /* ModelManifest.json in Resources */,
 				E3DB9083F86BCA7B5269DCCF /* OFL-Geist.txt in Resources */,
+				B8548426EEDD231A58DCF07E /* OFL-InstrumentSerif.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -442,6 +455,8 @@
 				20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */,
 				BDFB450B7C3609F5B2C2CFAC /* ConversationMock.swift in Sources */,
 				9925B5EB86416C0BC6024D08 /* ConversationView.swift in Sources */,
+				CD507D0B4709AB33F0F7FA3F /* ErrandVoice.swift in Sources */,
+				952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */,
 				E111E174E3575366B91AC573 /* Handwriting.swift in Sources */,
 				8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */,
 				C6835E22DC2A078BEA210B81 /* InferenceEngine.swift in Sources */,
@@ -451,6 +466,7 @@
 				016266670CB51C68B2F64D91 /* ModelSelector.swift in Sources */,
 				5A1FAFB15B385B1D2FDEFAE5 /* ModelSpec.swift in Sources */,
 				F0A8CD412AA5CBD4004A455E /* NeuralVoices.swift in Sources */,
+				03D075D2C1A9764BD604BD26 /* Pebble.swift in Sources */,
 				D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */,
 				B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */,
 				FA44867967FC588386898FFB /* SendControl.swift in Sources */,

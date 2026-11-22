@@ -81,14 +81,18 @@ struct SendControl: View {
 
     // MARK: Pieces
 
+    /// The active persona's bot colour, so the button shows who's answering.
+    private var tint: Color? { BotTint.color(for: store.personaID) }
+
     private var button: some View {
         Image(systemName: open ? "xmark" : "arrow.up")
             .font(.system(size: open ? 13 : 16, weight: .semibold))
             .contentTransition(.symbolEffect(.replace))
-            .foregroundStyle(open ? Ink.secondary : (canSend ? Ink.paper : Ink.tertiary))
+            .foregroundStyle(open ? Ink.secondary : (canSend ? (tint == nil ? Ink.paper : .white) : Ink.tertiary))
             .symbolEffect(.bounce.up, value: sendTaps)
             .frame(width: size, height: size)
-            .background(open ? Ink.fill : (canSend ? Ink.primary : Ink.hairline), in: .circle)
+            .background(open ? Ink.fill : (canSend ? tint ?? Ink.primary : Ink.hairline), in: .circle)
+            .animation(.smooth(duration: 0.35), value: store.personaID)
             .scaleEffect(pressing && !open ? 0.9 : (canSend || open ? 1 : 0.92))
             .animation(.spring(response: 0.3, dampingFraction: 0.65), value: pressing)
             .animation(.spring(response: 0.3, dampingFraction: 0.75), value: canSend)

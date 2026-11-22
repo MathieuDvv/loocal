@@ -81,6 +81,30 @@ struct ChatMessage: Identifiable, Codable, Sendable, Equatable {
     var files: [String]? = nil
     /// Hidden text sent to the model with this message (attached file contents).
     var context: String? = nil
+    /// What the reply used on the way: sources read and tools called, shown as boxes.
+    var tools: [ToolUse]? = nil
+}
+
+/// One tool step in a reply, as the chat shows it.
+struct ToolUse: Identifiable, Codable, Sendable, Equatable {
+    enum Status: String, Codable, Sendable { case running, done, failed }
+    struct Link: Codable, Sendable, Equatable, Hashable {
+        var title: String
+        var url: URL
+        var host: String { url.host()?.replacingOccurrences(of: "www.", with: "") ?? url.absoluteString }
+    }
+    var id = UUID()
+    /// Connector or tool id, used to pick the wording and icon.
+    var kind: String
+    var icon: String
+    /// "Searching the web" while running, "Searched the web" once done.
+    var running: String
+    var done: String
+    /// The query or a short note on what was read.
+    var detail: String = ""
+    var status: Status = .running
+    var links: [Link] = []
+    var title: String { status == .running ? running : status == .failed ? "Couldn’t reach " + done.lowercased() : done }
 }
 
 struct Conversation: Identifiable, Codable, Sendable {

@@ -50,7 +50,7 @@ struct SettingsView: View {
                             .accessibilityIdentifier("newPersona")
                             .transition(.opacity)
                         }
-                        Text("Hold the send button to switch personas.")
+                        Text("Hold the send button, or the errand bot, to switch personas.")
                             .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.leading, 4)
                     }
                     .animation(.spring(response: 0.4, dampingFraction: 0.85), value: store.personas)
@@ -223,10 +223,7 @@ private struct PersonaRow: View {
     var body: some View {
         Button(action: edit) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: persona.icon).font(.system(size: 16))
-                    .foregroundStyle(active ? Ink.paper : Ink.primary)
-                    .frame(width: 40, height: 40)
-                    .background(active ? Ink.primary : Ink.fill, in: .circle)
+                PersonaBadge(persona: persona, size: 40)
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(persona.name.isEmpty ? "Untitled" : persona.name).font(.geist(15, .medium)).foregroundStyle(Ink.primary)
@@ -247,6 +244,28 @@ private struct PersonaRow: View {
     }
 }
 
+/// A persona as one mark: its errand bot, with its chat icon pinned to the corner.
+struct PersonaBadge: View {
+    let persona: Persona
+    var size: CGFloat = 40
+
+    var body: some View {
+        PebbleBot(mood: .neutral, shape: persona.shape.flatMap(BotShape.init(rawValue:)) ?? BotShape(personaID: persona.id), size: size, lively: false,
+                  tint: persona.tint.flatMap(BotTint.init(rawValue:)).flatMap { $0 == .ink ? nil : $0.color })
+            .overlay(alignment: .bottomTrailing) {
+                Image(systemName: persona.icon)
+                    .font(.system(size: size * 0.22, weight: .semibold))
+                    .foregroundStyle(Ink.primary)
+                    .frame(width: size * 0.46, height: size * 0.46)
+                    .background(Ink.paper, in: .circle)
+                    .overlay(Circle().stroke(Ink.hairline))
+                    .offset(x: size * 0.08, y: size * 0.02)
+            }
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
 struct PersonaEditor: View {
     @State var persona: Persona
     let isNew: Bool
@@ -255,7 +274,15 @@ struct PersonaEditor: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var focus: Field?
     @Namespace private var iconPill
+    @Namespace private var sidePill
+    @State private var side: Side = .chat
+    @State private var hops = 0
     private enum Field { case name, prompt }
+    /// The two looks a persona has: its icon in chat, its bot on errands.
+    private enum Side: String, CaseIterable { case chat = "Chat", errands = "Errands" }
+
+    private var shape: BotShape { persona.shape.flatMap(BotShape.init(rawValue:)) ?? .pebble }
+    private var tint: BotTint { persona.tint.flatMap(BotTint.init(rawValue:)) ?? .ink }
 
     private var canSave: Bool { !persona.name.trimmingCharacters(in: .whitespaces).isEmpty && !persona.prompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
@@ -281,34 +308,32 @@ struct PersonaEditor: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
-                    Image(systemName: persona.icon)
-                        .font(.system(size: 30, weight: .light))
-                        .foregroundStyle(Ink.paper)
-                        .frame(width: 76, height: 76)
-                        .background(Ink.primary, in: .circle)
-                        .contentTransition(.symbolEffect(.replace))
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 8)
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        SectionLabel(text: "Icon")
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), spacing: 8) {
-                            ForEach(Persona.icons, id: \.self) { icon in
-                                Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { persona.icon = icon } } label: {
-                                    Image(systemName: icon).font(.system(size: 15))
-                                        .foregroundStyle(persona.icon == icon ? Ink.paper : Ink.primary)
-                                        .frame(width: 36, height: 36)
-                                        .background {
-                                            if persona.icon == icon { Circle().fill(Ink.primary).matchedGeometryEffect(id: "icon", in: iconPill) }
-                                            else { Circle().fill(Ink.fill) }
-                                        }
-                                }
-                                .buttonStyle(PressStyle(scale: 0.85))
-                                .accessibilityLabel(icon)
+                    VStack(spacing: 18) {
+                        ZStack {
+                            if side == .chat {
+                                Image(systemName: persona.icon)
+                                    .font(.system(size: 30, weight: .light))
+                                    .foregroundStyle(Ink.paper)
+                                    .frame(width: 76, height: 76)
+                                    .background(Ink.primary, in: .circle)
+                                    .contentTransition(.symbolEffect(.replace))
+                                    .transition(.blurReplace.combined(with: .scale(0.8)))
+                            } else {
+                                PebbleBot(mood: .happy, shape: shape, size: 92, reaction: hops, tint: tint == .ink ? nil : tint.color)
+                                    .transition(.blurReplace.combined(with: .scale(0.8)))
                             }
                         }
-                        .sensoryFeedback(.selection, trigger: persona.icon)
+                        .frame(height: 96)
+                        sideSwitch
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
+
+                    ZStack(alignment: .top) {
+                        if side == .chat { iconGrid.transition(.opacity.combined(with: .offset(x: -16))) }
+                        else { botPicker.transition(.opacity.combined(with: .offset(x: 16))) }
+                    }
+                    .simultaneousGesture(TapGesture().onEnded { focus = nil })
 
                     VStack(alignment: .leading, spacing: 10) {
                         SectionLabel(text: "Name")
@@ -343,13 +368,108 @@ struct PersonaEditor: View {
                     }
                 }
                 .padding(.horizontal, 20).padding(.bottom, 24)
+                // Tapping anywhere that isn't a field puts the keyboard away.
+                .background(Color.clear.contentShape(.rect).onTapGesture { focus = nil })
             }
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Ink.paper.ignoresSafeArea())
+        .animation(.spring(response: 0.42, dampingFraction: 0.86), value: side)
         .onChange(of: persona.prompt) { _, value in if value.count > 2000 { persona.prompt = String(value.prefix(2000)) } }
-        .onAppear { if isNew { focus = .name } }
+        // The bot starts as the one this persona already has, so nothing changes until picked.
+        .onAppear { if persona.shape == nil { persona.shape = BotShape(personaID: persona.id).rawValue } }
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(28)
+    }
+
+    private var sideSwitch: some View {
+        HStack(spacing: 0) {
+            ForEach(Side.allCases, id: \.self) { item in
+                Button { focus = nil; side = item } label: {
+                    Text(item.rawValue).font(.geist(14, .medium))
+                        .foregroundStyle(side == item ? Ink.paper : Ink.secondary)
+                        .padding(.horizontal, 18).frame(height: 34)
+                        .background {
+                            if side == item { Capsule().fill(Ink.primary).matchedGeometryEffect(id: "side", in: sidePill) }
+                        }
+                        .contentShape(.capsule)
+                }
+                .buttonStyle(PressStyle(scale: 0.95))
+                .accessibilityAddTraits(side == item ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(Ink.fill, in: .capsule)
+        .sensoryFeedback(.selection, trigger: side)
+    }
+
+    private var iconGrid: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            SectionLabel(text: "Icon in chat")
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), spacing: 8) {
+                ForEach(Persona.icons, id: \.self) { icon in
+                    Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { persona.icon = icon } } label: {
+                        Image(systemName: icon).font(.system(size: 15))
+                            .foregroundStyle(persona.icon == icon ? Ink.paper : Ink.primary)
+                            .frame(width: 36, height: 36)
+                            .background {
+                                if persona.icon == icon { Circle().fill(Ink.primary).matchedGeometryEffect(id: "icon", in: iconPill) }
+                                else { Circle().fill(Ink.fill) }
+                            }
+                    }
+                    .buttonStyle(PressStyle(scale: 0.85))
+                    .accessibilityLabel(icon)
+                }
+            }
+            .sensoryFeedback(.selection, trigger: persona.icon)
+        }
+    }
+
+    private var botPicker: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 10) {
+                SectionLabel(text: "Shape")
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6), spacing: 8) {
+                    ForEach(BotShape.allCases, id: \.self) { option in
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) { persona.shape = option.rawValue }
+                            hops += 1
+                        } label: {
+                            PebbleBot(mood: .neutral, shape: option, size: 38, lively: false, tint: tint == .ink ? nil : tint.color)
+                                .frame(width: 50, height: 50)
+                                .background {
+                                    if shape == option { Circle().fill(Ink.fill).matchedGeometryEffect(id: "shape", in: iconPill) }
+                                }
+                        }
+                        .buttonStyle(PressStyle(scale: 0.85))
+                        .accessibilityLabel(option.name)
+                        .accessibilityAddTraits(shape == option ? .isSelected : [])
+                    }
+                }
+                .sensoryFeedback(.selection, trigger: persona.shape)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                SectionLabel(text: "Colour")
+                HStack(spacing: 12) {
+                    ForEach(BotTint.allCases, id: \.self) { option in
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) { persona.tint = option == .ink ? nil : option.rawValue }
+                            hops += 1
+                        } label: {
+                            Circle().fill(option.color)
+                                .frame(width: 30, height: 30)
+                                .padding(4)
+                                .overlay {
+                                    if tint == option { Circle().stroke(Ink.primary, lineWidth: 1.6).matchedGeometryEffect(id: "tint", in: iconPill) }
+                                }
+                        }
+                        .buttonStyle(PressStyle(scale: 0.85))
+                        .accessibilityLabel(option.name)
+                        .accessibilityAddTraits(tint == option ? .isSelected : [])
+                    }
+                }
+                .sensoryFeedback(.selection, trigger: persona.tint)
+            }
+        }
     }
 }

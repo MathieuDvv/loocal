@@ -58,6 +58,11 @@ enum VoiceLibrary {
         return .system(installed().first ?? AVSpeechSynthesisVoice(language: AVSpeechSynthesisVoice.currentLanguageCode()))
     }
 
+    /// The best installed system voice, for when a neural voice can't be used.
+    @MainActor static var systemFallback: VoiceChoice {
+        .system(installed().first ?? AVSpeechSynthesisVoice(language: AVSpeechSynthesisVoice.currentLanguageCode()))
+    }
+
     @MainActor static func output(for choice: VoiceChoice, neural: NeuralVoiceStore?) -> SpeechOutput {
         switch choice {
         case .neural(let voice): NeuralSpeech(voice: voice, directory: neural!.directory)

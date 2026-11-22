@@ -15,7 +15,19 @@ struct Connector: Identifiable, Hashable {
     static let reminders = Connector(id: "reminders", name: "Reminders", icon: "checklist", detail: "Open reminders")
     static let clipboard = Connector(id: "clipboard", name: "Clipboard", icon: "doc.on.clipboard", detail: "What you last copied")
     static let wikipedia = Connector(id: "wikipedia", name: "Wikipedia", icon: "globe", detail: "Looks your question up online")
-    static let builtIn = [calendar, reminders, clipboard, wikipedia]
+    static let web = Connector(id: "web", name: "Web search", icon: "magnifyingglass", detail: "Lets the model search the web")
+    static let builtIn = [web, calendar, reminders, clipboard, wikipedia]
+
+    /// The box shown in a reply when this source is read.
+    var use: ToolUse {
+        switch id {
+        case Connector.calendar.id: ToolUse(kind: id, icon: icon, running: "Reading your calendar", done: "Read your calendar", detail: "Next 7 days")
+        case Connector.reminders.id: ToolUse(kind: id, icon: icon, running: "Reading your reminders", done: "Read your reminders", detail: "Open reminders")
+        case Connector.clipboard.id: ToolUse(kind: id, icon: icon, running: "Reading the clipboard", done: "Read the clipboard")
+        case Connector.wikipedia.id: ToolUse(kind: id, icon: "globe", running: "Looking it up on Wikipedia", done: "Looked it up on Wikipedia")
+        default: ToolUse(kind: id, icon: icon, running: "Using \(name)", done: "Used \(name)")
+        }
+    }
 
     static func mcp(_ server: MCPServer) -> Connector {
         Connector(id: server.connectorID, name: server.name, icon: "server.rack", detail: "\(server.tools.count) tools · \(server.url.host() ?? "")")
@@ -121,6 +133,144 @@ enum Wikipedia {
         var request = URLRequest(url: url, timeoutInterval: 6)
         request.setValue("Loocal/1.0 (iOS app)", forHTTPHeaderField: "User-Agent")
         return try await URLSession.shared.data(for: request).0
+    }
+}
+
+// MARK: - Web search
+
+/// Web search for the on-device model, as a tool it can call. Only the query leaves the
+/// phone: it goes to DuckDuckGo, with no account and no cookies. Falls back to Wikipedia.
+enum WebSearch {
+    struct Hit: Sendable, Hashable {
+        var title: String
+        var url: URL
+        var snippet: String
+    }
+
+    /// The tool as the model sees it. Its URL never leaves the app; calls are routed here.
+    static let definition = ToolDefinition(url: URL(string: "loocal://web-search")!, token: nil, tool: MCPTool(
+        name: "web_search",
+        description: "Search the web. Use it for news, recent events, prices, opening hours, places, people, or anything you are not sure about.",
+        schema: #"{"type":"object","properties":{"query":{"type":"string","description":"A short search query"}},"required":["query"]}"#))
+
+    static func isLocal(_ definition: ToolDefinition) -> Bool { definition.url.scheme == "loocal" }
+
+    /// Small models often answer from memory instead of calling the tool. When a message
+    /// clearly asks about something current, the search runs first, whatever the model does.
+    static func wantsSearch(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        let words = Set(lower.components(separatedBy: CharacterSet.letters.union(.decimalDigits).union(CharacterSet(charactersIn: "'’")).inverted).filter { !$0.isEmpty })
+        if !words.isDisjoint(with: triggerWords) { return true }
+        return triggerPhrases.contains { lower.contains($0) }
+    }
+
+    /// Words that ask for a search outright: these run one even with web search off.
+    static func explicitlyAsked(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        return ["search", "look up", "look it up", "google", "on the web", "online", "cherche", "recherche", "sur internet", "sur le web"].contains { lower.contains($0) }
+    }
+
+    private static let triggerWords: Set<String> = [
+        "latest", "news", "today", "today's", "tonight", "current", "currently", "recent", "recently", "update", "updates",
+        "price", "prices", "cost", "weather", "forecast", "score", "scores", "winner", "won", "release", "released", "launch",
+        "launched", "upcoming", "search", "google", "trending", "stock", "stocks", "election", "headlines", "2025", "2026", "2027",
+        "dernier", "dernière", "derniers", "dernières", "actu", "actualité", "actualités", "aujourd'hui", "aujourd’hui", "récent",
+        "récente", "récemment", "prix", "météo", "sortie", "cherche", "recherche", "tendance",
+    ]
+    private static let triggerPhrases = ["right now", "look up", "this week", "this year", "this month", "what's new", "what’s new", "en ce moment", "cette semaine", "cette année", "quoi de neuf", "open now", "near me"]
+
+    /// The message as a search query: its first line, without the polite padding.
+    static func searchQuery(from text: String) -> String {
+        var query = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
+        for filler in ["can you ", "could you ", "please ", "tell me ", "search the web for ", "search online for ", "search for ", "search ", "look up ", "google ", "cherche sur internet ", "cherche "] {
+            if query.lowercased().hasPrefix(filler) { query = String(query.dropFirst(filler.count)) }
+        }
+        return String(query.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters)).prefix(120))
+    }
+
+    static func arguments(for query: String) -> String {
+        (try? JSONSerialization.data(withJSONObject: ["query": query])).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+    }
+
+    /// Added to the system prompt when the tool is on.
+    static let guidance = "You can search the web with web_search. Use it for anything that may have changed recently: news, the latest versions, prices, weather, results, opening hours. Do not guess current facts."
+
+    static func query(from argumentsJSON: String) -> String {
+        let object = (try? JSONSerialization.jsonObject(with: Data(argumentsJSON.utf8))) as? [String: Any]
+        return ((object?["query"] ?? object?["q"]) as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func search(_ query: String) async -> [Hit] {
+        guard !query.isEmpty else { return [] }
+        let hits = (try? await duckDuckGo(query)) ?? []
+        if !hits.isEmpty { return hits }
+        // Nothing back (offline page, a challenge page): try Wikipedia instead.
+        if let text = await Wikipedia.summary(for: query), let title = text.split(separator: "\n").first {
+            let name = title.replacingOccurrences(of: "Wikipedia — ", with: "").replacingOccurrences(of: ":", with: "")
+            let language = Locale.current.language.languageCode?.identifier ?? "en"
+            let page = name.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? ""
+            if let url = URL(string: "https://\(language).wikipedia.org/wiki/\(page)") {
+                return [Hit(title: name, url: url, snippet: String(text.dropFirst(title.count + 1)))]
+            }
+        }
+        return []
+    }
+
+    /// What the model reads back: numbered results, trimmed to fit the small context.
+    static func report(_ hits: [Hit], for query: String) -> String {
+        guard !hits.isEmpty else { return "No web results for “\(query)”." }
+        return "Web results for “\(query)”:\n" + hits.prefix(5).enumerated().map { i, hit in
+            "\(i + 1). \(hit.title) (\(hit.url.host() ?? "")): \(hit.snippet.prefix(220))"
+        }.joined(separator: "\n") + "\nAnswer from these results and name the sources you used."
+    }
+
+    private static func duckDuckGo(_ query: String) async throws -> [Hit] {
+        var request = URLRequest(url: URL(string: "https://html.duckduckgo.com/html/")!, timeoutInterval: 8)
+        request.httpMethod = "POST"
+        request.httpShouldHandleCookies = false
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1", forHTTPHeaderField: "User-Agent")
+        let region = Locale.current.region.map { "\($0.identifier.lowercased())-\(Locale.current.language.languageCode?.identifier ?? "en")" } ?? "wt-wt"
+        var form = URLComponents()
+        form.queryItems = [.init(name: "q", value: query), .init(name: "kl", value: region)]
+        request.httpBody = form.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B").data(using: .utf8)
+        let (data, _) = try await URLSession.shared.data(for: request)
+        return parse(String(decoding: data, as: UTF8.self))
+    }
+
+    static func parse(_ html: String) -> [Hit] {
+        html.components(separatedBy: "class=\"result results_links").dropFirst().compactMap { block -> Hit? in
+            guard !block.prefix(120).contains("result--ad"),
+                  let link = first(#"class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)</a>"#, in: block), link.count == 2,
+                  let url = target(link[0]) else { return nil }
+            let snippet = first(#"class="result__snippet"[^>]*>([\s\S]*?)</a>"#, in: block)?.first ?? ""
+            return Hit(title: plain(link[1]), url: url, snippet: plain(snippet))
+        }
+        .prefix(6).map { $0 }
+    }
+
+    /// Result links are either direct or DuckDuckGo redirects carrying the target in `uddg`.
+    private static func target(_ href: String) -> URL? {
+        let href = href.replacingOccurrences(of: "&amp;", with: "&")
+        let absolute = href.hasPrefix("//") ? "https:" + href : href
+        guard let components = URLComponents(string: absolute) else { return nil }
+        if let redirect = components.queryItems?.first(where: { $0.name == "uddg" })?.value { return URL(string: redirect) }
+        guard components.host?.contains("duckduckgo.com") == false else { return nil }
+        return components.url
+    }
+
+    private static func first(_ pattern: String, in text: String) -> [String]? {
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
+        return (1..<match.numberOfRanges).compactMap { Range(match.range(at: $0), in: text).map { String(text[$0]) } }
+    }
+
+    private static func plain(_ html: String) -> String {
+        var text = html.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        for (entity, value) in ["&amp;": "&", "&quot;": "\"", "&#x27;": "’", "&#39;": "’", "&lt;": "<", "&gt;": ">", "&nbsp;": " "] {
+            text = text.replacingOccurrences(of: entity, with: value)
+        }
+        return text.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 

@@ -88,6 +88,14 @@ final class VoiceConversation: ConversationSource {
     @ObservationIgnored private var replyDone = false
     @ObservationIgnored private var running = false
     @ObservationIgnored private var tapInstalled = false
+    /// Errand mode: what you say goes to this instead of the chat model, and its answer
+    /// is spoken back. Nothing is added to the chat history.
+    @ObservationIgnored var respond: ((String) async -> String)? {
+        // Errands generate on MLX while the bot talks. The neural voice is MLX too, and
+        // MLX can't run from two places at once, so errand mode speaks with the system voice.
+        didSet { if respond != nil { systemVoiceOnly = true } }
+    }
+    @ObservationIgnored private var systemVoiceOnly = false
 
     /// A pause this long after speech ends your turn.
     private static let endOfTurn: TimeInterval = 1.1
@@ -114,7 +122,9 @@ final class VoiceConversation: ConversationSource {
                 lines.append(ConversationLine(fromUser: false, text: "The microphone couldn’t start: \(error.localizedDescription)"))
                 return
             }
-            let output = VoiceLibrary.output(for: VoiceLibrary.current(store?.neuralVoices), neural: store?.neuralVoices)
+            var choice = VoiceLibrary.current(store?.neuralVoices)
+            if systemVoiceOnly, case .neural = choice { choice = VoiceLibrary.systemFallback }
+            let output = VoiceLibrary.output(for: choice, neural: store?.neuralVoices)
             output.onIdle = { [weak self] in
                 guard let self, self.replyDone, self.running else { return }
                 self.resumeListening()
@@ -241,6 +251,15 @@ final class VoiceConversation: ConversationSource {
         replying = Task { [weak self] in
             guard let self else { return }
             var final = ""
+            if let respond = self.respond {
+                final = await respond(said)
+                guard !Task.isCancelled else { return }
+                self.received(final)
+                self.replyDone = true
+                self.speakPending(final: true)
+                if self.output?.isIdle ?? true { self.resumeListening() }
+                return
+            }
             do {
                 if SystemLanguageModel.default.isAvailable {
                     if self.session == nil { self.session = LanguageModelSession(instructions: self.instructions) }
@@ -270,6 +289,21 @@ final class VoiceConversation: ConversationSource {
             self.store?.recordVoiceTurn(user: said, reply: Self.plain(final))
             if self.output?.isIdle ?? true { self.resumeListening() }
         }
+    }
+
+    /// Speak up unprompted, between your turns: errand mode uses it to read results back.
+    func announce(_ text: String) {
+        guard running, phase == .listening else { return }
+        let said = lines.last?.fromUser == true ? lines.last!.text.trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        guard said.isEmpty else { return } // never talk over you
+        stopListening()
+        if lines.last?.fromUser == true { lines.removeLast() }
+        lines.append(ConversationLine(fromUser: false, text: Self.plain(text)))
+        trim()
+        spoken = 0
+        replyDone = true
+        speakPending(final: true)
+        if output?.isIdle ?? true { resumeListening() }
     }
 
     private func received(_ text: String) {

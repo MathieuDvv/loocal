@@ -100,3 +100,49 @@ extension View {
             .animation(.spring(response: 0.55, dampingFraction: 0.85).delay(delay), value: shown)
     }
 }
+
+/// A soft band of ink that sweeps across text while something is under way ("Thinking",
+/// "Loading model"). It reads the text's own shape, so it works on any colour.
+struct Shimmer: ViewModifier {
+    var active: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            if active && !reduceMotion {
+                TimelineView(.animation) { timeline in
+                    // 1.1 s sweep, then a short rest, so it breathes rather than strobes.
+                    let cycle = 1.6
+                    let t = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: cycle) / 1.1
+                    GeometryReader { proxy in
+                        let band = max(40, proxy.size.width * 0.45)
+                        LinearGradient(colors: [Ink.primary.opacity(0), Ink.primary, Ink.primary.opacity(0)], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: band)
+                            .offset(x: -band + min(t, 1) * (proxy.size.width + band))
+                    }
+                }
+                .mask(content)
+                .allowsHitTesting(false)
+                .transition(.opacity)
+            }
+        }
+    }
+}
+
+extension View {
+    func shimmer(_ active: Bool = true) -> some View { modifier(Shimmer(active: active)) }
+}
+
+/// Behind the prompt bar and History's search: the page fades into the paper, almost
+/// opaque by the time it reaches the nav bar, instead of a flat strip.
+struct BottomFade: View {
+    var body: some View {
+        LinearGradient(stops: [
+            .init(color: Ink.paper.opacity(0), location: 0),
+            .init(color: Ink.paper.opacity(0.75), location: 0.35),
+            .init(color: Ink.paper.opacity(0.97), location: 1),
+        ], startPoint: .top, endPoint: .bottom)
+        .padding(.top, -28)
+        .allowsHitTesting(false)
+    }
+}
