@@ -328,6 +328,10 @@ struct ErrandView: View {
     var openPersonas: () -> Void = {}
     @FocusState private var focused: Bool
     @State private var reaction = 0
+    @State private var reactionKind: BotReaction = .hop
+    /// Left alone for a while, the bot dozes off; any touch wakes it.
+    @State private var dozing = false
+    @State private var lastTouch = Date.now
     // The persona arc: hold the bot, slide to a bot, let go.
     @State private var picking = false
     @State private var pressing = false
@@ -356,6 +360,30 @@ struct ErrandView: View {
     private var onTheGo: [ErrandRun] { crew.filter(\.isActive) }
 
     var body: some View {
+        page
+        // A result coming in gets a little hop.
+        .onChange(of: crew.filter { $0.status == .done }.count) { old, new in
+            if new > old { react(.jump); flash(.proud, ("Back with", "results."), for: 2.2) }
+        }
+        .onChange(of: crew.filter { $0.status == .failed }.count) { old, new in
+            if new > old { react(.shake) }
+        }
+        .onChange(of: focused) { _, _ in wake() }
+        .onChange(of: picking) { _, _ in wake() }
+        .task { await watchIdle() }
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.6), trigger: reaction)
+    }
+
+    /// Nodding off after 45 s with nothing going on.
+    private func watchIdle() async {
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(5))
+            let idle = isIdle()
+            if idle != dozing { withAnimation(.smooth(duration: 0.6)) { dozing = idle } }
+        }
+    }
+
+    private var page: some View {
         VStack(spacing: 0) {
             ModelSelector(options: ModelChoice.all, disabled: store.isBusy, selection: $store.selectedModelID, dimmed: !store.download.isReady)
                 .frame(maxWidth: .infinity)
@@ -391,9 +419,6 @@ struct ErrandView: View {
         .sheet(item: $opened) { run in
             ErrandRunSheet(store: store, id: run.id, continueInChat: { opened = nil; continueInChat($0) }, again: { opened = nil; store.rerun($0) })
         }
-        // A result coming in gets a little hop.
-        .onChange(of: crew.filter { $0.status == .done }.count) { old, new in if new > old { reaction += 1 } }
-        .sensoryFeedback(.impact(weight: .light, intensity: 0.6), trigger: reaction)
     }
 
     // MARK: The bot and what it says
@@ -403,7 +428,7 @@ struct ErrandView: View {
     private var stage: some View {
         VStack(spacing: 18) {
             Spacer(minLength: 8)
-            PebbleBot(mood: mood, shape: shape, size: focused ? 96 : 128, gaze: gaze, reaction: reaction, tint: BotTint.color(for: store.errandPersona?.id))
+            PebbleBot(mood: mood, shape: shape, size: focused ? 96 : 128, gaze: gaze, reaction: reaction, tint: BotTint.color(for: store.errandPersona?.id), reactionKind: reactionKind)
                 // A new persona swaps the body with a little twirl.
                 .id(store.errandPersona?.id)
                 .transition(.asymmetric(
@@ -452,12 +477,12 @@ struct ErrandView: View {
     private var mood: BotMood {
         if picking { return hovered == nil ? .curious : .excited }
         if let burst { return burst.mood }
-        if !store.composerReady { return .sleepy }
+        if !store.composerReady || dozing { return .sleepy }
         if focused { return desk.draft.isEmpty ? .attentive : .curious }
         if !desk.draft.isEmpty { return .excited }
         if onTheGo.contains(where: { $0.status == .running }) { return .working }
         if !onTheGo.isEmpty { return .curious }
-        if crew.contains(where: { $0.status == .failed }) { return .sad }
+        if crew.contains(where: { $0.status == .failed }) { return .dizzy }
         if crew.contains(where: { $0.status == .done }) { return .happy }
         return .neutral
     }
@@ -604,8 +629,8 @@ struct ErrandView: View {
         case .persona(let persona):
             desk.personaID = persona.id
         }
-        reaction += 1
-        flash(.happy, item == .loocal ? ("Back to", "me.") : (label(item), "here."))
+        react(.spin)
+        flash(.love, item == .loocal ? ("Back to", "me.") : (label(item), "here."))
     }
 
     /// The fan of bots over the main one, with a faint curved track behind them.
@@ -685,10 +710,38 @@ struct ErrandView: View {
     }
 
     private func poke() {
+        if dozing { wake(); react(.shake); flash(.surprised, ("Huh?", "I’m up.")); return }
+        wake()
+        let pokes: [(BotMood, BotReaction, (String, String))] = [
+            (.happy, .hop, ("Hi", "there.")),
+            (.wink, .nod, ("At your", "service.")),
+            (.love, .wiggle, ("Hey", "you.")),
+            (.surprised, .hop, ("Oh!", "Hello.")),
+            (.excited, .spin, ("Point me", "somewhere.")),
+            (.annoyed, .shake, ("That", "tickles.")),
+        ]
+        let pick = pokes[(reaction + 1) % pokes.count]
+        react(pick.1)
+        flash(pick.0, pick.2)
+    }
+
+    /// Plays one of the bot's moves.
+    private func react(_ kind: BotReaction) {
+        reactionKind = kind
         reaction += 1
-        let lines: [(BotMood, (String, String))] = [(.happy, ("Hi", "there.")), (.excited, ("At your", "service.")), (.curious, ("Point me", "somewhere.")), (.happy, ("That", "tickles."))]
-        let pick = lines[reaction % lines.count]
-        flash(pick.0, pick.1)
+    }
+
+    private func isIdle() -> Bool {
+        let quiet: Bool = Date.now.timeIntervalSince(lastTouch) > 45
+        let calm: Bool = onTheGo.isEmpty && !focused && !picking
+        return quiet && calm && burstIsEmpty
+    }
+
+    private var burstIsEmpty: Bool { if case .none = burst { return true } else { return false } }
+
+    private func wake() {
+        lastTouch = .now
+        if dozing { withAnimation(.smooth(duration: 0.4)) { dozing = false } }
     }
 
     private func flash(_ mood: BotMood, _ line: (String, String), for seconds: Double = 1.6) {
@@ -768,7 +821,8 @@ struct ErrandView: View {
             try? await Task.sleep(for: .milliseconds(40))
             ticket?.launched = true
             try? await Task.sleep(for: .milliseconds(400))
-            reaction += 1
+            wake()
+            react(.jump)
             withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
                 if cadence == .now {
                     store.runErrand(title: title, instructions: instructions, sources: sources)

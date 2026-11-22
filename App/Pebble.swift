@@ -3,8 +3,25 @@ import SwiftUI
 // MARK: - The errand bot
 
 /// What the bot's face is doing.
-enum BotMood: Equatable {
+enum BotMood: Equatable, CaseIterable {
     case neutral, attentive, curious, excited, working, happy, sad, sleepy, waiting
+    /// Heart eyes.
+    case love
+    /// Wide round eyes.
+    case surprised
+    /// One eye shut in a smile.
+    case wink
+    /// Crossed-out eyes, for an errand that tripped.
+    case dizzy
+    /// Smug half-lids.
+    case proud
+    /// Flat, slanted lids.
+    case annoyed
+}
+
+/// A one-off body movement, played when a bot's `reaction` counter goes up.
+enum BotReaction: CaseIterable {
+    case hop, jump, spin, shake, nod, wiggle
 }
 
 /// Each persona gets its own body, so you can tell who's on an errand at a glance.
@@ -145,17 +162,31 @@ private struct DropletBody: Shape {
     }
 }
 
-/// A tilted ink pebble, the body of the errand bot. Drawn in a unit square.
-struct PebbleShape: Shape {
+/// A half-closed eye: a flat lid on top, a round curve below.
+private struct LidEye: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let r = rect.height * 0.22
+        path.move(to: CGPoint(x: rect.minX + r, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
+        path.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + r), control: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addCurve(to: CGPoint(x: rect.minX, y: rect.minY + r), control1: CGPoint(x: rect.maxX, y: rect.maxY * 1.25), control2: CGPoint(x: rect.minX, y: rect.maxY * 1.25))
+        path.addQuadCurve(to: CGPoint(x: rect.minX + r, y: rect.minY), control: CGPoint(x: rect.minX, y: rect.minY))
+        path.closeSubpath()
+        return path
+    }
+}
+
+/// A small heart, for eyes in love.
+private struct HeartEye: Shape {
     func path(in rect: CGRect) -> Path {
         func p(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height) }
         var path = Path()
-        // Wider than tall, sitting a little lower on the left: a river stone at rest.
-        path.move(to: p(0.03, 0.59))
-        path.addCurve(to: p(0.45, 0.14), control1: p(0.01, 0.33), control2: p(0.21, 0.15))
-        path.addCurve(to: p(0.97, 0.44), control1: p(0.71, 0.13), control2: p(0.97, 0.23))
-        path.addCurve(to: p(0.55, 0.87), control1: p(0.97, 0.67), control2: p(0.79, 0.87))
-        path.addCurve(to: p(0.03, 0.59), control1: p(0.29, 0.87), control2: p(0.05, 0.82))
+        path.move(to: p(0.5, 0.95))
+        path.addCurve(to: p(0.02, 0.32), control1: p(0.28, 0.78), control2: p(0.02, 0.6))
+        path.addCurve(to: p(0.5, 0.2), control1: p(0.02, 0.02), control2: p(0.42, 0.0))
+        path.addCurve(to: p(0.98, 0.32), control1: p(0.58, 0.0), control2: p(0.98, 0.02))
+        path.addCurve(to: p(0.5, 0.95), control1: p(0.98, 0.6), control2: p(0.72, 0.78))
         path.closeSubpath()
         return path
     }
@@ -188,6 +219,15 @@ struct PebbleBot: View {
     var reaction = 0
     /// Body colour; ink when nil.
     var tint: Color? = nil
+    /// Which movement the next bump of `reaction` plays.
+    var reactionKind: BotReaction = .hop
+
+    @State private var hops = 0
+    @State private var jumps = 0
+    @State private var spins = 0
+    @State private var shakes = 0
+    @State private var nods = 0
+    @State private var wiggles = 0
 
     @State private var blink = false
     @State private var glance: CGPoint = .zero
@@ -206,7 +246,7 @@ struct PebbleBot: View {
             .rotationEffect(.degrees(look.x * 4))
         }
         .frame(width: size, height: size)
-        .keyframeAnimator(initialValue: Hop(), trigger: reaction) { content, hop in
+        .keyframeAnimator(initialValue: Hop(), trigger: hops) { content, hop in
             content
                 .scaleEffect(x: hop.squash, y: 2 - hop.squash, anchor: .bottom)
                 .offset(y: hop.lift * size)
@@ -223,11 +263,101 @@ struct PebbleBot: View {
                 SpringKeyframe(0, duration: 0.34)
             }
         }
+        // Two hops for joy, the second higher.
+        .keyframeAnimator(initialValue: Hop(), trigger: jumps) { content, hop in
+            content
+                .scaleEffect(x: hop.squash, y: 2 - hop.squash, anchor: .bottom)
+                .offset(y: hop.lift * size)
+        } keyframes: { _ in
+            KeyframeTrack(\.squash) {
+                SpringKeyframe(1.12, duration: 0.09)
+                SpringKeyframe(0.94, duration: 0.16)
+                SpringKeyframe(1.12, duration: 0.14)
+                SpringKeyframe(0.92, duration: 0.18)
+                SpringKeyframe(1, duration: 0.3)
+            }
+            KeyframeTrack(\.lift) {
+                LinearKeyframe(0, duration: 0.09)
+                SpringKeyframe(-0.12, duration: 0.16)
+                SpringKeyframe(0, duration: 0.14)
+                SpringKeyframe(-0.22, duration: 0.2)
+                SpringKeyframe(0, duration: 0.32)
+            }
+        }
+        // A full twirl, squashing as it lands.
+        .keyframeAnimator(initialValue: Hop(), trigger: spins) { content, hop in
+            content
+                .rotationEffect(.degrees(hop.turn))
+                .scaleEffect(x: hop.squash, y: 2 - hop.squash, anchor: .bottom)
+                .offset(y: hop.lift * size)
+        } keyframes: { _ in
+            KeyframeTrack(\.turn) {
+                CubicKeyframe(0, duration: 0.05)
+                SpringKeyframe(360, duration: 0.6, spring: .smooth)
+            }
+            KeyframeTrack(\.lift) {
+                SpringKeyframe(-0.1, duration: 0.25)
+                SpringKeyframe(0, duration: 0.35)
+            }
+            KeyframeTrack(\.squash) {
+                LinearKeyframe(1, duration: 0.5)
+                SpringKeyframe(1.1, duration: 0.1)
+                SpringKeyframe(1, duration: 0.3)
+            }
+        }
+        // No-no: a quick side to side.
+        .keyframeAnimator(initialValue: Hop(), trigger: shakes) { content, hop in
+            content.offset(x: hop.shift * size)
+        } keyframes: { _ in
+            KeyframeTrack(\.shift) {
+                SpringKeyframe(-0.06, duration: 0.07)
+                SpringKeyframe(0.06, duration: 0.09)
+                SpringKeyframe(-0.045, duration: 0.09)
+                SpringKeyframe(0.03, duration: 0.09)
+                SpringKeyframe(0, duration: 0.2)
+            }
+        }
+        // Yes-yes: two little dips.
+        .keyframeAnimator(initialValue: Hop(), trigger: nods) { content, hop in
+            content
+                .scaleEffect(x: 2 - hop.squash, y: hop.squash, anchor: .bottom)
+                .offset(y: hop.lift * size)
+        } keyframes: { _ in
+            KeyframeTrack(\.squash) {
+                SpringKeyframe(0.9, duration: 0.12)
+                SpringKeyframe(1, duration: 0.14)
+                SpringKeyframe(0.92, duration: 0.12)
+                SpringKeyframe(1, duration: 0.25)
+            }
+        }
+        // A happy wobble.
+        .keyframeAnimator(initialValue: Hop(), trigger: wiggles) { content, hop in
+            content.rotationEffect(.degrees(hop.turn), anchor: .bottom)
+        } keyframes: { _ in
+            KeyframeTrack(\.turn) {
+                SpringKeyframe(-11, duration: 0.1)
+                SpringKeyframe(10, duration: 0.14)
+                SpringKeyframe(-7, duration: 0.13)
+                SpringKeyframe(4, duration: 0.12)
+                SpringKeyframe(0, duration: 0.3)
+            }
+        }
+        .onChange(of: reaction) { old, new in
+            guard new > old, !reduceMotion else { return }
+            switch reactionKind {
+            case .hop: hops += 1
+            case .jump: jumps += 1
+            case .spin: spins += 1
+            case .shake: shakes += 1
+            case .nod: nods += 1
+            case .wiggle: wiggles += 1
+            }
+        }
         .task(id: lively) { await live() }
         .accessibilityHidden(true)
     }
 
-    private struct Hop { var squash: CGFloat = 1; var lift: CGFloat = 0 }
+    private struct Hop { var squash: CGFloat = 1; var lift: CGFloat = 0; var turn: Double = 0; var shift: CGFloat = 0 }
 
     private func currentGaze(_ t: TimeInterval) -> CGPoint {
         if mood == .working && !reduceMotion {
@@ -263,7 +393,7 @@ struct PebbleBot: View {
     // MARK: Eyes
 
     private struct EyeSpec: Equatable {
-        enum Kind { case pill, happy, closed }
+        enum Kind { case pill, happy, closed, heart, cross, lid }
         var kind: Kind = .pill
         var width: CGFloat
         var height: CGFloat
@@ -281,6 +411,12 @@ struct PebbleBot: View {
         case .sad: EyeSpec(width: 0.08, height: 0.13, tilt: left ? 22 : -22)
         case .sleepy: EyeSpec(kind: .closed, width: 0.12, height: 0.05)
         case .waiting: EyeSpec(width: 0.085, height: 0.12)
+        case .love: EyeSpec(kind: .heart, width: 0.15, height: 0.14)
+        case .surprised: EyeSpec(width: 0.11, height: 0.25)
+        case .wink: left ? EyeSpec(kind: .happy, width: 0.13, height: 0.07) : EyeSpec(width: 0.085, height: 0.19)
+        case .dizzy: EyeSpec(kind: .cross, width: 0.12, height: 0.12)
+        case .proud: EyeSpec(kind: .lid, width: 0.13, height: 0.08, tilt: left ? 6 : -6)
+        case .annoyed: EyeSpec(kind: .lid, width: 0.13, height: 0.065, tilt: left ? -12 : 12)
         }
     }
 
@@ -303,7 +439,26 @@ struct PebbleBot: View {
             EyeArc(up: spec.kind == .happy)
                 .stroke(Ink.paper, style: StrokeStyle(lineWidth: size * 0.045, lineCap: .round))
                 .frame(width: size * spec.width, height: size * spec.height)
-                .opacity(spec.kind == .pill ? 0 : 1)
+                .opacity(spec.kind == .happy || spec.kind == .closed ? 1 : 0)
+            HeartEye()
+                .fill(Ink.paper)
+                .frame(width: size * spec.width, height: size * spec.height)
+                .scaleEffect(spec.kind == .heart ? 1 : 0.3)
+                .opacity(spec.kind == .heart ? 1 : 0)
+            ZStack {
+                Capsule().frame(width: size * 0.035, height: size * spec.height)
+                    .rotationEffect(.degrees(45))
+                Capsule().frame(width: size * 0.035, height: size * spec.height)
+                    .rotationEffect(.degrees(-45))
+            }
+            .foregroundStyle(Ink.paper)
+            .opacity(spec.kind == .cross ? 1 : 0)
+            // A half-closed eye: flat on top, round underneath.
+            LidEye()
+                .fill(Ink.paper)
+                .frame(width: size * spec.width, height: size * spec.height)
+                .rotationEffect(.degrees(spec.tilt))
+                .opacity(spec.kind == .lid ? 1 : 0)
         }
         .frame(width: size * 0.14, height: size * 0.2)
         .animation(.easeOut(duration: 0.07), value: blink)
@@ -316,7 +471,7 @@ struct PebbleBot: View {
         while !Task.isCancelled {
             try? await Task.sleep(for: .seconds(Double.random(in: 2.2...4.8)))
             guard !Task.isCancelled else { return }
-            if mood != .sleepy && mood != .happy {
+            if [.neutral, .attentive, .curious, .excited, .working, .sad, .waiting, .surprised].contains(mood) {
                 blink = true
                 try? await Task.sleep(for: .milliseconds(110))
                 blink = false
@@ -341,7 +496,7 @@ extension ErrandRun {
         case .queued: stage == ErrandRun.nextUp ? .waiting : .curious
         case .running: .working
         case .done: .happy
-        case .failed: .sad
+        case .failed: .dizzy
         case .stopped: .sleepy
         }
     }
@@ -463,6 +618,8 @@ private struct RoutineGlyph: View {
         }
         .compositingGroup()
         .frame(width: 25, height: 24)
+        // The rounded tip starts below the frame's top, so lift it to sit centred like the others.
+        .offset(y: -2.5)
         .animation(.spring(response: 0.9, dampingFraction: 0.8), value: selected)
         .modifier(GlyphPop(selected: selected))
     }
@@ -507,15 +664,16 @@ private struct ChatGlyph: View {
                     .scaleEffect(send.scale, anchor: .bottomLeading)
                     .offset(y: send.rise)
             } keyframes: { _ in
+                // Starts close to full size, just below, and settles with the gentlest overshoot.
                 KeyframeTrack(\.scale) {
-                    LinearKeyframe(0.35, duration: 0.01)
-                    SpringKeyframe(1.08, duration: 0.22, spring: .snappy)
-                    SpringKeyframe(1, duration: 0.35, spring: .smooth)
+                    LinearKeyframe(0.78, duration: 0.01)
+                    SpringKeyframe(1.03, duration: 0.3, spring: .smooth)
+                    SpringKeyframe(1, duration: 0.4, spring: .smooth)
                 }
                 KeyframeTrack(\.rise) {
-                    LinearKeyframe(7, duration: 0.01)
-                    SpringKeyframe(-1, duration: 0.24, spring: .snappy)
-                    SpringKeyframe(0, duration: 0.35, spring: .smooth)
+                    LinearKeyframe(3, duration: 0.01)
+                    SpringKeyframe(-0.4, duration: 0.3, spring: .smooth)
+                    SpringKeyframe(0, duration: 0.4, spring: .smooth)
                 }
             }
             .onChange(of: selected) { _, now in if now { sends += 1 } }

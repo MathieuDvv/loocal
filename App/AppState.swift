@@ -17,6 +17,11 @@ final class AppState {
     var selectedModelID: String { didSet { UserDefaults.standard.set(selectedModelID, forKey: "model") } }
     var personas: [Persona] { didSet { Persona.save(personas); BotShape.sync(personas) } }
     var personaID: UUID? { didSet { UserDefaults.standard.set(personaID?.uuidString, forKey: "persona") } }
+    /// Light memory: facts you asked Loocal to keep in mind, added to every reply.
+    var memories: [Memory] { didSet { Memory.save(memories) } }
+    var memoryOn: Bool { didSet { UserDefaults.standard.set(memoryOn, forKey: "memory.on") } }
+    /// A page a Shortcut asked to open; the root view goes there and clears it.
+    var requestedTab: AppTab?
     var conversations: [Conversation]
     var selectedID: UUID
     var draft = ""
@@ -26,7 +31,7 @@ final class AppState {
     var activeConnectors: Set<String> { didSet { UserDefaults.standard.set(Array(activeConnectors), forKey: "connectors.active") } }
     var mcpServers: [MCPServer] { didSet { MCPServer.save(mcpServers) } }
     var connectors: [Connector] { Connector.builtIn + mcpServers.map(Connector.mcp) }
-    var isBusy = false
+    var isBusy = false { didSet { if isBusy { unloadTask?.cancel() } } }
     var phase = "Ready"
     var tokens = 0
     var performance = ""
@@ -72,6 +77,8 @@ final class AppState {
         personas = savedPersonas
         BotShape.sync(savedPersonas)
         personaID = UserDefaults.standard.string(forKey: "persona").flatMap(UUID.init(uuidString:))
+        memories = Memory.load()
+        memoryOn = UserDefaults.standard.object(forKey: "memory.on") as? Bool ?? true
         var connectorsOn = Set(UserDefaults.standard.stringArray(forKey: "connectors.active") ?? [])
         // Web search starts switched on, once; after that it stays however you leave it.
         if !UserDefaults.standard.bool(forKey: "connectors.webDefault") {
@@ -139,6 +146,12 @@ final class AppState {
         save()
     }
 
+    func togglePin(_ conversation: Conversation) {
+        guard let index = conversations.firstIndex(where: { $0.id == conversation.id }) else { return }
+        conversations[index].pinned = conversations[index].isPinned ? nil : true
+        save()
+    }
+
     func select(_ conversation: Conversation) {
         guard !isBusy else { return }
         discardTemporary(keeping: conversation.id)
@@ -148,6 +161,39 @@ final class AppState {
         performance = ""
         save()
     }
+
+    #if DEBUG
+    /// Device benchmark (`-bench` launch argument): times loading, prompt reading and
+    /// writing on the GPU, then on the CPU as if the app were in the background. Printed
+    /// to the console with a BENCH prefix.
+    func benchmark() async {
+        guard download.isReady, let directory = try? download.loadingDirectory() else { print("BENCH no model ready"); return }
+        let model = model
+        for cpu in ComputeTarget.backgroundCPU ? [false, true] : [false] {
+            ComputeTarget.mode = cpu ? .background : .foreground
+            let start = Date()
+            let marks = BenchMarks()
+            let messages = [ChatMessage(role: .user, text: "In three short sentences, why is the sea salty?")]
+            let run = Task {
+                try await engine.respond(model: model, directory: directory, system: InferenceEngine.defaultSystemPrompt, messages: messages, imagesDirectory: files.images, update: { _, count in
+                    await marks.token(count)
+                }, phase: { phase in await marks.phase(phase) })
+            }
+            // The CPU pass only needs enough tokens to measure its speed.
+            let watchdog = Task { try? await Task.sleep(for: .seconds(cpu ? 120 : 240)); run.cancel() }
+            let result = await run.result
+            watchdog.cancel()
+            let summary = await marks.summary(since: start)
+            switch result {
+            case .success(let reply): print("BENCH \(cpu ? "CPU" : "GPU") ok \(summary) tokens=\(reply.tokens) headroom=\(reply.headroom)MB")
+            case .failure(let error): print("BENCH \(cpu ? "CPU" : "GPU") failed \(summary) error=\(error.localizedDescription)")
+            }
+        }
+        ComputeTarget.mode = .foreground
+        await engine.unload()
+        print("BENCH done")
+    }
+    #endif
 
     #if DEBUG && targetEnvironment(simulator)
     /// Simulator-only sample transcript for UI review (`-uiDemo` launch argument). Never saved.
@@ -379,12 +425,34 @@ final class AppState {
         guard !isBusy else { throw IslandError.message("Loocal is already answering in the chat.") }
         var system = system
         let question = messages.last(where: { $0.role == .user })?.text ?? ""
-        if (activeConnectors.contains(Connector.web.id) && WebSearch.wantsSearch(question)) || WebSearch.explicitlyAsked(question) {
-            let query = WebSearch.searchQuery(from: question)
-            system += "\n\n" + (await Self.call(WebSearch.definition, arguments: WebSearch.arguments(for: query))).output + "\nAnswer in a few spoken sentences."
-        }
+        let context = await voiceContext(for: question)
+        if !context.isEmpty { system += "\n\n" + context }
         let result = try await engine.respond(model: model, directory: try download.loadingDirectory(), system: system, messages: messages, imagesDirectory: files.images, update: { text, _ in await update(text) }, phase: { _ in })
         return result.text
+    }
+
+    /// What the app around the model can do, so it never claims it can't look things up.
+    static let capabilities = "You run inside Loocal, on the user's iPhone. Loocal itself can: search the web and read links, find places near the user and travel times with Apple Maps (using their location), do exact maths and date counts, translate, add reminders and calendar events, run their Shortcuts, and remember things. When Loocal has done one of these for this message, its results are above: use them. Never say you have no location, internet or calendar access. If a request needs one of these and no result is above, ask them to say it plainly, for example “find restaurants near me”."
+
+    /// Everything Loocal works out before a spoken answer, whichever model gives it:
+    /// actions done, tool results, memory and web results.
+    func voiceContext(for question: String) async -> String {
+        var parts: [String] = []
+        if let action = ToolAction.detect(question) {
+            var list = memories
+            let (_, failure) = await ActionRunner.perform(action, memories: &list)
+            if action.kind == .remember || action.kind == .forget { memories = list }
+            parts.append(action.note(ok: failure == nil, error: failure))
+        }
+        let found = await ToolBelt.run(for: question) { _ in }
+        if !found.isEmpty { parts.append(found) }
+        if (activeConnectors.contains(Connector.web.id) && WebSearch.wantsSearch(question)) || WebSearch.explicitlyAsked(question) {
+            let query = WebSearch.searchQuery(from: question)
+            parts.append((await Self.call(WebSearch.definition, arguments: WebSearch.arguments(for: query))).output + "\nAnswer in a few spoken sentences.")
+        }
+        if memoryOn, !memories.isEmpty { parts.append(Memory.prompt(memories)) }
+        parts.append(Self.capabilities)
+        return parts.joined(separator: "\n\n")
     }
 
     /// Voice turns are kept in the current chat, like typed ones.
@@ -488,6 +556,16 @@ final class AppState {
                     for box in boxes { finishTool(box.id, conversationID, replyID, failed: box.kind == Connector.wikipedia.id && !context.contains("Wikipedia —")) }
                     if !context.isEmpty { system += "\n\n" + context }
                 }
+                // Something to do, not just answer: done first, then the reply confirms it.
+                if let action = ToolAction.detect(question) {
+                    await setPhase(action.box.running)
+                    system += "\n\n" + (await act(action, conversationID: conversationID, replyID: replyID))
+                }
+                // Maths, dates, places, a linked page, translation: worked out for the model.
+                let found = await ToolBelt.run(for: question) { box in self.upsertTool(box, conversationID, replyID) }
+                if !found.isEmpty { system += "\n\n" + found }
+                system += "\n\n" + Self.capabilities
+                if memoryOn, !memories.isEmpty { system += "\n\n" + Memory.prompt(memories) }
                 if active.contains(Connector.web.id) {
                     system += "\n\n" + WebSearch.guidance
                     if WebSearch.wantsSearch(question) {
@@ -522,7 +600,7 @@ final class AppState {
             endGrace()
             // Releasing the model after every job leaves memory available to other apps,
             // unless an errand has been waiting for it.
-            if desk.runs.contains(where: { $0.status == .queued }) { pumpErrands() } else { await engine.unload() }
+            if desk.runs.contains(where: { $0.status == .queued }) { pumpErrands() } else { releaseModelSoon() }
         }
     }
 
@@ -583,7 +661,71 @@ final class AppState {
         box.links = result.links
         let failed = result.output.hasPrefix("The tool could not") || result.output.hasPrefix("Tool error") || (local && result.links.isEmpty)
         finishTool(box.id, conversationID, replyID, failed: failed, links: result.links)
+        // Snippets are thin: read the top result's page too, so the answer has substance.
+        if local, let top = result.links.first {
+            var read = ToolUse(kind: "page", icon: "doc.text", running: "Reading the top result", done: "Read the top result", detail: top.host)
+            addTool(read, conversationID, replyID)
+            if let page = await PageReader.read(top.url, limit: 900) {
+                read.status = .done
+                read.links = [top]
+                replaceTool(read, conversationID, replyID)
+                return result.output + "\n\nFrom the top result (\(top.host)):\n" + page.text
+            }
+            read.status = .failed
+            replaceTool(read, conversationID, replyID)
+        }
         return result.output
+    }
+
+    /// Carries out an action from the chat and shows it as a box with Undo. Returns the
+    /// note for the model.
+    private func act(_ action: ToolAction, conversationID: UUID, replyID: UUID) async -> String {
+        var box = action.box
+        addTool(box, conversationID, replyID)
+        var list = memories
+        let (done, error) = await ActionRunner.perform(action, memories: &list)
+        if action.kind == .remember || action.kind == .forget { memories = list }
+        box.action = done
+        box.detail = action.kind == .forget ? done.title : box.detail
+        box.status = error == nil ? .done : .failed
+        if let error { box.detail = error }
+        replaceTool(box, conversationID, replyID)
+        return action.note(ok: error == nil, error: error)
+    }
+
+    /// Undo from a box in a reply: removes the reminder or event, or puts memory back.
+    func undoAction(_ toolID: UUID) {
+        for ci in conversations.indices {
+            for mi in conversations[ci].messages.indices {
+                guard let ti = conversations[ci].messages[mi].tools?.firstIndex(where: { $0.id == toolID }),
+                      let action = conversations[ci].messages[mi].tools?[ti].action else { continue }
+                var list = memories
+                if ActionRunner.undo(action, memories: &list) {
+                    memories = list
+                    conversations[ci].messages[mi].tools?[ti].status = .undone
+                    save()
+                } else {
+                    error = "Couldn’t undo that. It may already be gone."
+                }
+                return
+            }
+        }
+    }
+
+    /// Adds the box, or updates it if it's already in the reply.
+    private func upsertTool(_ use: ToolUse, _ conversationID: UUID, _ replyID: UUID) {
+        guard let ci = conversations.firstIndex(where: { $0.id == conversationID }), let mi = conversations[ci].messages.firstIndex(where: { $0.id == replyID }) else { return }
+        if let ti = conversations[ci].messages[mi].tools?.firstIndex(where: { $0.id == use.id }) {
+            conversations[ci].messages[mi].tools?[ti] = use
+        } else {
+            conversations[ci].messages[mi].tools = (conversations[ci].messages[mi].tools ?? []) + [use]
+        }
+    }
+
+    private func replaceTool(_ use: ToolUse, _ conversationID: UUID, _ replyID: UUID) {
+        guard let ci = conversations.firstIndex(where: { $0.id == conversationID }), let mi = conversations[ci].messages.firstIndex(where: { $0.id == replyID }),
+              let ti = conversations[ci].messages[mi].tools?.firstIndex(where: { $0.id == use.id }) else { return }
+        conversations[ci].messages[mi].tools?[ti] = use
     }
 
     private func addTool(_ use: ToolUse, _ conversationID: UUID, _ replyID: UUID) {
@@ -617,9 +759,30 @@ final class AppState {
         run.personaID = errandPersona?.id
         run.stage = sources.allSatisfy({ $0 == Connector.web.id }) ? ErrandRun.nextUp : "Gathering"
         if let errandID { desk.markRan(errandID) }
+        // A one-off "remind me…" or "add to my calendar…" is simply done, no model needed.
+        if errandID == nil, let action = ToolAction.detect(instructions) {
+            run.stage = action.box.running
+            desk.start(run)
+            Task { await self.actErrand(run.id, action) }
+            return
+        }
         desk.start(run)
         prepare(run)
         pumpErrands()
+    }
+
+    private func actErrand(_ id: UUID, _ action: ToolAction) async {
+        var list = memories
+        let (done, error) = await ActionRunner.perform(action, memories: &list)
+        if action.kind == .remember || action.kind == .forget { memories = list }
+        if let error {
+            desk.finish(id, status: .failed, note: error)
+            return
+        }
+        let box = done.box
+        desk.update(id, text: "**\(box.done).**\n\n" + [done.title, done.when].compactMap { $0 }.joined(separator: " · "))
+        desk.finish(id, status: .done)
+        if UIApplication.shared.applicationState != .active, let run = desk.runs.first(where: { $0.id == id }) { ErrandDesk.announce(run) }
     }
 
     /// The persona errands currently go out as (nil if none, or it was deleted).
@@ -714,6 +877,9 @@ final class AppState {
                 // A persona's voice and know-how come first; the errand rules still apply.
                 let persona = personas.first { $0.id == run.personaID }?.prompt.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 var system = (persona.isEmpty ? "" : persona + "\n\n") + ErrandDesk.systemPrompt + "\n\nIt is now " + Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).hour().minute()) + "."
+                if memoryOn, !memories.isEmpty { system += "\n\n" + Memory.prompt(memories) }
+                let found = await ToolBelt.run(for: run.instructions) { _ in }
+                if !found.isEmpty { system += "\n\n" + found }
                 if let gathered {
                     desk.setStage(run.id, "Finishing reading")
                     let context = await gathered.value
@@ -756,7 +922,7 @@ final class AppState {
             generation = nil
             endGrace()
             // Keep the model loaded if another errand is waiting for it.
-            if !desk.runs.contains(where: { $0.status == .queued }) { await engine.unload() }
+            if !desk.runs.contains(where: { $0.status == .queued }) { releaseModelSoon() }
             pumpErrands()
         }
     }
@@ -793,8 +959,9 @@ final class AppState {
             if !(continued.hasGrant && continued.grantedGPU) { ComputeTarget.mode = .leaving }
             if !continued.hasGrant && graceTask == .invalid {
                 // No continued-processing grant: borrow UIKit's short background window.
+                // Just long enough to drain the GPU safely; the reply then waits, paused, and
+                // carries on when you come back. It's no longer stopped when this runs out.
                 graceTask = UIApplication.shared.beginBackgroundTask(withName: "Loocal reply") { [weak self] in
-                    self?.stop(reason: "iOS paused Loocal in the background. Your partial reply is saved.")
                     self?.endGrace()
                 }
             }
@@ -804,6 +971,8 @@ final class AppState {
 
     func didEnterBackground() {
         if !(continued.hasGrant && continued.grantedGPU) { ComputeTarget.mode = .background }
+        // Out of sight, the model's memory goes back to iOS straight away.
+        if !isBusy { unloadTask?.cancel(); Task { await engine.unload() } }
         save()
     }
 
@@ -824,7 +993,21 @@ final class AppState {
     /// iOS sends memory warnings long before an app with a multi-gigabyte model is in real
     /// danger, so a reply keeps going; the engine watches actual headroom and stops itself
     /// cleanly if it gets genuinely low. When idle, the model is released.
+    /// The model stays loaded a little after a reply, so a follow-up starts at once instead
+    /// of loading 3 GB again. Any new reply cancels the countdown.
+    @ObservationIgnored private var unloadTask: Task<Void, Never>?
+
+    private func releaseModelSoon() {
+        unloadTask?.cancel()
+        unloadTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(90))
+            guard let self, !Task.isCancelled, !self.isBusy else { return }
+            await self.engine.unload()
+        }
+    }
+
     func memoryWarning() {
+        unloadTask?.cancel()
         if !isBusy { Task { await engine.unload() } }
     }
 
@@ -859,3 +1042,26 @@ final class AppState {
         catch { self.error = "Couldn’t save your chat: \(error.localizedDescription)" }
     }
 }
+
+#if DEBUG
+/// Timestamps for the benchmark.
+actor BenchMarks {
+    private var phases: [(String, Date)] = []
+    private var first: Date?
+    private var last: (Int, Date)?
+    func phase(_ name: String) { phases.append((name, .now)); print("BENCH phase \(name)") }
+    func token(_ count: Int) {
+        if first == nil { first = .now }
+        last = (count, .now)
+        if count % 32 == 0 { print("BENCH token \(count)") }
+    }
+    func summary(since start: Date) -> String {
+        let generating = phases.first { $0.0 == "Generating" || $0.0 == "Writing in background" }?.1
+        let load = phases.first { $0.0 == "Reading prompt" }?.1.timeIntervalSince(start) ?? -1
+        let prefill = first.map { $0.timeIntervalSince(generating ?? start) } ?? -1
+        var speed = -1.0
+        if let first, let last, last.0 > 1 { speed = Double(last.0 - 1) / max(last.1.timeIntervalSince(first), 0.001) }
+        return String(format: "load=%.1fs firstToken=%.1fs speed=%.2ftok/s", load, prefill, speed)
+    }
+}
+#endif

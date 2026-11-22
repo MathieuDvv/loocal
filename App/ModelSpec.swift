@@ -87,7 +87,7 @@ struct ChatMessage: Identifiable, Codable, Sendable, Equatable {
 
 /// One tool step in a reply, as the chat shows it.
 struct ToolUse: Identifiable, Codable, Sendable, Equatable {
-    enum Status: String, Codable, Sendable { case running, done, failed }
+    enum Status: String, Codable, Sendable { case running, done, failed, undone }
     struct Link: Codable, Sendable, Equatable, Hashable {
         var title: String
         var url: URL
@@ -104,7 +104,16 @@ struct ToolUse: Identifiable, Codable, Sendable, Equatable {
     var detail: String = ""
     var status: Status = .running
     var links: [Link] = []
-    var title: String { status == .running ? running : status == .failed ? "Couldn’t reach " + done.lowercased() : done }
+    /// Something it did (not just read), which can be undone.
+    var action: ToolAction? = nil
+    var title: String {
+        switch status {
+        case .running: running
+        case .done: done
+        case .undone: "Undone"
+        case .failed: action == nil ? "Couldn’t reach " + done.lowercased() : "Couldn’t do it"
+        }
+    }
 }
 
 struct Conversation: Identifiable, Codable, Sendable {
@@ -114,6 +123,9 @@ struct Conversation: Identifiable, Codable, Sendable {
     /// Temporary chats are never written to disk or listed in History.
     var temporary: Bool? = nil
     var isTemporary: Bool { temporary == true }
+    /// Pinned chats sit at the top of History.
+    var pinned: Bool? = nil
+    var isPinned: Bool { pinned == true }
     var title: String { messages.first(where: { $0.role == .user }).map { String($0.text.prefix(52)) } ?? "New conversation" }
 
     mutating func recoverInterruptedReply() {

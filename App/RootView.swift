@@ -44,6 +44,9 @@ struct RootView: View {
     @State private var addingPersona = false
     /// How far the bottom bar is being swiped; the page leans with it.
     @State private var barDrag: CGFloat = 0
+    /// A horizontal swipe on the page itself, moving to the next or previous tab.
+    @State private var pageDrag: CGFloat = 0
+    @State private var settingsPath: [SettingsPage] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearance") private var appearance: Appearance = .system
 
@@ -52,15 +55,18 @@ struct RootView: View {
             switch tab {
             case .history: HistoryView(store: store, open: { store.select($0); go(.chat) }).transition(slide)
             case .chat: ChatView(store: store, openSettings: { go(.settings) }, openPersonas: { addingPersona = true; go(.settings) }).transition(slide)
-            case .settings: SettingsView(store: store, appearance: $appearance, addingPersona: $addingPersona).transition(slide)
+            case .settings: SettingsView(store: store, appearance: $appearance, addingPersona: $addingPersona, path: $settingsPath).transition(slide)
             case .results: ErrandResultsView(store: store, continueInChat: continueInChat, openErrand: { go(.errand) }).transition(slide)
             case .errand: ErrandView(store: store, openResults: { go(.results) }, openRoutines: { go(.routines) }, continueInChat: continueInChat, openPersonas: { addingPersona = true; go(.settings) }).transition(slide)
             case .routines: RoutinesView(store: store, newErrand: { go(.errand) }).transition(slide)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Swiping the page moves through the tabs, left to right across both sets:
+        // History, Chat, Settings, then Results, Errand, Routines.
+        .gesture(pageSwipe, isEnabled: !keyboardVisible && settingsPath.isEmpty)
         // While the bar is swiped the page drifts a little the same way, so the two feel joined.
-        .offset(x: reduceMotion ? 0 : barDrag * 0.1)
+        .offset(x: reduceMotion ? 0 : barDrag * 0.1 + pageDrag)
         .opacity(1 - min(abs(barDrag) / 1400, 0.2))
         .background(Ink.paper.ignoresSafeArea())
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -90,11 +96,20 @@ struct RootView: View {
         // A temporary chat is always dark, so it's obvious at a glance you're off the record.
         .preferredColorScheme(tab == .chat && store.isTemporary ? .dark : appearance.scheme)
         .animation(.smooth(duration: 0.35), value: appearance)
-        .onOpenURL { _ in go(.chat) }
+        .onOpenURL { url in if url.host() != "shortcut-done" { go(.chat) } }
+        .onChange(of: store.requestedTab) { _, requested in
+            guard let requested else { return }
+            store.requestedTab = nil
+            if requested.space != tab.space { flip(to: requested.space, velocity: 0) }
+            go(requested)
+        }
         #if DEBUG && targetEnvironment(simulator)
         .onAppear {
             let arguments = ProcessInfo.processInfo.arguments
             if arguments.contains("-uiDemo") { store.loadDemo() }
+            if arguments.contains("-renderIcons") { IconRender.write() }
+            if arguments.contains("-renderMoods") { IconRender.moods() }
+            if arguments.contains("-renderSleep") { IconRender.sleep() }
             // Fills the crew, to review errands running side by side.
             if arguments.contains("-crewDemo") {
                 for idea in ErrandIdea.all.prefix(3) { store.runErrand(title: idea.title, instructions: idea.instructions, sources: idea.sources) }
@@ -103,6 +118,9 @@ struct RootView: View {
                 tab = start; previous = start; remembered[start.space] = start
             }
         }
+        #endif
+        #if DEBUG
+        .task { if ProcessInfo.processInfo.arguments.contains("-bench") { await store.benchmark() } }
         #endif
         // Routines whose time came while Loocal was open run without waiting for a relaunch.
         .task {
@@ -136,6 +154,37 @@ struct RootView: View {
                 ? .offset(x: forward ? -distance * 0.5 : distance * 0.5).combined(with: .opacity).combined(with: .modifier(active: SoftBlur(radius: 4), identity: SoftBlur(radius: 0))).animation(.easeOut(duration: 0.14))
                 : .offset(x: forward ? -distance : distance).combined(with: .opacity)
         )
+    }
+
+    private var pageSwipe: some Gesture {
+        DragGesture(minimumDistance: 24)
+            .onChanged { value in
+                let dx = value.translation.width, dy = value.translation.height
+                guard abs(dx) > abs(dy) * 1.6 else { return }
+                // Follows the finger a little, with resistance where there's nowhere to go.
+                let blocked = (dx > 0 && neighbour(-1) == nil) || (dx < 0 && neighbour(1) == nil)
+                pageDrag = dx * (blocked ? 0.06 : 0.18)
+            }
+            .onEnded { value in
+                let dx = value.translation.width, dy = value.translation.height
+                let fling = value.predictedEndTranslation.width
+                let horizontal = abs(dx) > abs(dy) * 1.6
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { pageDrag = 0 }
+                guard horizontal, abs(dx) > 70 || abs(fling) > 260, let next = neighbour(dx < 0 ? 1 : -1) else { return }
+                if next.space != tab.space {
+                    remembered[next.space] = next
+                    flip(to: next.space, velocity: 0)
+                } else {
+                    go(next)
+                }
+            }
+    }
+
+    /// The tab beside this one, crossing from Settings to Results and back.
+    private func neighbour(_ step: Int) -> AppTab? {
+        let order = AppTab.allCases.sorted { $0.order < $1.order }
+        guard let index = order.firstIndex(of: tab), order.indices.contains(index + step) else { return nil }
+        return order[index + step]
     }
 
     private func go(_ destination: AppTab, animation: Animation = .spring(response: 0.42, dampingFraction: 0.88)) {
@@ -380,6 +429,7 @@ struct ChatView: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 } else {
                     transcript.id(store.selectedID)
+                        .environment(\.undoAction, { store.undoAction($0) })
                         .transition(.opacity.combined(with: .offset(y: 12)))
                 }
             }
@@ -889,10 +939,16 @@ private struct AttachedPhoto: View {
 
 /// One step a reply took before answering: a source it read or a tool it called. Running,
 /// its title shimmers; done, it can open to show what it found.
+extension EnvironmentValues {
+    /// Undo for an action box in a reply (a reminder, an event, a memory).
+    @Entry var undoAction: (UUID) -> Void = { _ in }
+}
+
 struct ToolBox: View {
     let use: ToolUse
     @State private var open = false
     @Environment(\.openURL) private var openURL
+    @Environment(\.undoAction) private var undo
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -902,7 +958,7 @@ struct ToolBox: View {
                         if use.status == .running {
                             SpiralLoader(size: 14, color: Ink.primary).transition(.scale.combined(with: .opacity))
                         } else {
-                            Image(systemName: use.status == .failed ? "exclamationmark" : use.icon)
+                            Image(systemName: use.status == .failed ? "exclamationmark" : use.status == .undone ? "arrow.uturn.backward" : use.icon)
                                 .font(.system(size: 12, weight: .semibold))
                                 .transition(.scale.combined(with: .opacity))
                         }
@@ -920,6 +976,16 @@ struct ToolBox: View {
                         }
                     }
                     if open { Spacer(minLength: 8) }
+                    if use.action?.undoable == true && use.status == .done {
+                        Button { undo(use.id) } label: {
+                            Text("Undo").font(.geist(12, .medium)).foregroundStyle(Ink.primary)
+                                .padding(.horizontal, 10).frame(height: 26)
+                                .background(Ink.paper, in: .capsule)
+                        }
+                        .buttonStyle(PressStyle(scale: 0.9))
+                        .padding(.leading, 6)
+                        .transition(.scale.combined(with: .opacity))
+                    }
                     if !use.links.isEmpty {
                         Image(systemName: "chevron.down")
                             .font(.system(size: 11, weight: .semibold)).foregroundStyle(Ink.tertiary)
@@ -988,14 +1054,16 @@ struct HistoryView: View {
 
     private var groups: [(String, [Conversation])] {
         let calendar = Calendar.current
-        let buckets = Dictionary(grouping: matches) { c -> Int in
+        let pinned = matches.filter(\.isPinned).sorted { $0.createdAt > $1.createdAt }
+        let buckets = Dictionary(grouping: matches.filter { !$0.isPinned }) { c -> Int in
             if calendar.isDateInToday(c.createdAt) { return 0 }
             if calendar.isDateInYesterday(c.createdAt) { return 1 }
             if let days = calendar.dateComponents([.day], from: c.createdAt, to: .now).day, days < 7 { return 2 }
             return 3
         }
         let names = ["Today", "Yesterday", "Previous 7 days", "Earlier"]
-        return buckets.keys.sorted().map { (names[$0], buckets[$0]!.sorted { $0.createdAt > $1.createdAt }) }
+        let dated = buckets.keys.sorted().map { (names[$0], buckets[$0]!.sorted { $0.createdAt > $1.createdAt }) }
+        return (pinned.isEmpty ? [] : [("Pinned", pinned)]) + dated
     }
 
     var body: some View {
@@ -1026,6 +1094,7 @@ struct HistoryView: View {
                 .scrollDismissesKeyboard(.immediately)
                 .contentMargins(.top, 8, for: .scrollContent)
                 .animation(.spring(response: 0.4, dampingFraction: 0.85), value: matches.map(\.id))
+                .animation(.spring(response: 0.4, dampingFraction: 0.85), value: matches.map(\.isPinned))
                 .dismissesKeyboardOnTap()
             }
         }
@@ -1059,6 +1128,11 @@ struct HistoryView: View {
         Button { open(conversation) } label: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline) {
+                    if conversation.isPinned {
+                        Image(systemName: "pin.fill").font(.system(size: 11)).foregroundStyle(Ink.tertiary)
+                            .rotationEffect(.degrees(35))
+                            .transition(.scale.combined(with: .opacity))
+                    }
                     Text(conversation.title).font(.geist(16)).foregroundStyle(Ink.primary).lineLimit(1)
                     Spacer(minLength: 12)
                     Text(conversation.createdAt, format: Calendar.current.isDateInToday(conversation.createdAt) ? .dateTime.hour().minute() : .dateTime.month(.abbreviated).day())
@@ -1079,6 +1153,17 @@ struct HistoryView: View {
         .swipeActions {
             Button("Delete", systemImage: "trash", role: .destructive) { withAnimation(.smooth) { store.delete(conversation) } }
                 .tint(.red) // the app-wide ink tint would otherwise turn it white on white
+        }
+        .swipeActions(edge: .leading) {
+            Button(conversation.isPinned ? "Unpin" : "Pin", systemImage: conversation.isPinned ? "pin.slash" : "pin") {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { store.togglePin(conversation) }
+            }
+            .tint(Ink.primary)
+        }
+        .contextMenu {
+            Button(conversation.isPinned ? "Unpin" : "Pin", systemImage: conversation.isPinned ? "pin.slash" : "pin") {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { store.togglePin(conversation) }
+            }
         }
     }
 }
@@ -1229,3 +1314,58 @@ struct DownloadComposer: View {
         .accessibilityIdentifier("composerDownload")
     }
 }
+
+#if DEBUG && targetEnvironment(simulator)
+/// Renders the bot app icon (light and dark) to Documents, for the asset catalog.
+@MainActor
+enum IconRender {
+    static func write() {
+        for dark in [false, true] {
+            let view = ZStack {
+                (dark ? Color.black : Color.white)
+                PebbleBot(mood: .neutral, shape: .pebble, size: 660, lively: false)
+                    .offset(y: 10)
+            }
+            .frame(width: 1024, height: 1024)
+            .environment(\.colorScheme, dark ? .dark : .light)
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 1
+            guard let image = renderer.uiImage, let data = image.pngData() else { continue }
+            let url = URL.documentsDirectory.appendingPathComponent(dark ? "AppIconBot-dark.png" : "AppIconBot.png")
+            try? data.write(to: url)
+            print("ICON \(url.path)")
+        }
+    }
+
+    /// The compact island while paused, at 3× its real size.
+    static func sleep() {
+        let view = HStack {
+            LoopMarkShape().stroke(.white, style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)).frame(width: 22, height: 11)
+            Spacer()
+            SleepingPebble(drift: 0).frame(width: 18.4, height: 18.4)
+        }
+        .padding(.horizontal, 10)
+        .frame(width: 230, height: 37)
+        .background(Color.black, in: .capsule)
+        .padding(10).background(Color.white)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 4
+        if let data = renderer.uiImage?.pngData() { try? data.write(to: URL.documentsDirectory.appendingPathComponent("sleep.png")) }
+    }
+
+    static func moods() {
+        let view = LazyVGrid(columns: Array(repeating: GridItem(.fixed(150)), count: 5), spacing: 10) {
+            ForEach(BotMood.allCases, id: \.self) { mood in
+                VStack {
+                    PebbleBot(mood: mood, size: 120, lively: false)
+                    Text(String(describing: mood)).font(.caption)
+                }
+            }
+        }
+        .padding(20).background(Color.white)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 1
+        if let data = renderer.uiImage?.pngData() { try? data.write(to: URL.documentsDirectory.appendingPathComponent("moods.png")) }
+    }
+}
+#endif

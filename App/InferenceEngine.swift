@@ -21,6 +21,34 @@ enum ComputeTarget {
     }
     static var useCPU: Bool { mode == .background }
     static var device: Device { useCPU ? .cpu : .gpu }
+    /// Whether writing may continue on the CPU in the background. Measured on an iPhone Air
+    /// (Qwen3 VL 4B): the GPU writes ~12 tokens/s, the CPU didn't finish reading a short
+    /// prompt in 7 minutes. So by default a reply pauses when the app leaves and resumes on
+    /// the GPU when it's back.
+    static let backgroundCPU = false
+
+    /// Points MLX's process-wide default (used by anything not inside a scoped device,
+    /// including the C++ core) at `device`. Scoped devices alone left some work on the GPU,
+    /// which then waited on the CPU's slower results until Metal timed out and aborted.
+    static func pin(_ device: Device) {
+        Pinner.pin(device)
+    }
+
+    @available(*, deprecated)
+    private enum Pinner {
+        static func pin(_ device: Device) { Device.setDefault(device: device) }
+    }
+}
+
+/// MLX isn't safe to drive from two places at once. The chat model and the natural voice
+/// (Kokoro) both run on it, so each takes turns: one token, or one spoken sentence, at a time.
+enum MLXGate {
+    private static let lock = NSLock()
+    static func run<T>(_ body: () throws -> T) rethrows -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return try body()
+    }
 }
 
 struct InferenceResult: Sendable {
@@ -78,6 +106,11 @@ actor InferenceEngine {
         }
         guard let container else { throw IslandError.message("The model could not load.") }
         try Task.checkCancellation()
+        // Started while away (a routine firing, a reply sent as the app closed): wait for the app.
+        if ComputeTarget.useCPU && !ComputeTarget.backgroundCPU {
+            await phase("Paused")
+            while ComputeTarget.mode != .foreground { try await Task.sleep(for: .milliseconds(250)) }
+        }
         await phase("Reading prompt")
         // Qwen's chat template takes tool specs natively; Gemma gets them described in text.
         let specs: [[String: any Sendable]]? = tools.isEmpty || model.family != .qwenVL ? nil : tools.map(Self.spec)
@@ -85,7 +118,12 @@ actor InferenceEngine {
         // Fresh KV cache per reply prevents retained vision tensors and unbounded chat growth.
         return try await container.perform { context in
             // Never touch the GPU queue from the background: even an empty sync is GPU work.
-            defer { if ComputeTarget.useCPU { Stream.cpu.synchronize() } else { Stream.gpu.synchronize() }; GPU.clearCache() }
+            ComputeTarget.pin(ComputeTarget.device)
+            defer {
+                if ComputeTarget.useCPU { Stream.cpu.synchronize() } else { Stream.gpu.synchronize() }
+                GPU.clearCache()
+                ComputeTarget.pin(.gpu) // so speech and the next reply start from the usual default
+            }
             var recent = Array(messages.suffix(7))
             while recent.count > 1 && recent.first?.role == .assistant { recent.removeFirst() }
             var toolTurns: [Chat.Message] = []
@@ -123,8 +161,11 @@ actor InferenceEngine {
                 // Prompt reading runs wherever the app is right now: GPU in the foreground, CPU if
                 // the user already left.
                 var onGPU = !ComputeTarget.useCPU
-                var iterator = try Device.withDefaultDevice(ComputeTarget.device) {
-                    try TokenIterator(input: input, model: context.model, parameters: parameters)
+                ComputeTarget.pin(onGPU ? .gpu : .cpu)
+                var iterator = try MLXGate.run {
+                    try Device.withDefaultDevice(ComputeTarget.device) {
+                        try TokenIterator(input: input, model: context.model, parameters: parameters)
+                    }
                 }
                 var tokens: [Int] = []
                 // Keep generation inside this actor-owned operation. Cancellation drains GPU work
@@ -138,8 +179,17 @@ actor InferenceEngine {
                         while ComputeTarget.mode == .leaving {
                             try await Task.sleep(for: .milliseconds(40))
                         }
-                        if ComputeTarget.mode == .background {
+                        if ComputeTarget.mode == .background && !ComputeTarget.backgroundCPU {
+                            // Paused: nothing runs until the app is back, then the GPU picks up
+                            // exactly where it stopped.
+                            await phase("Paused")
+                            while ComputeTarget.mode != .foreground {
+                                try await Task.sleep(for: .milliseconds(200))
+                            }
+                            await phase("Generating")
+                        } else if ComputeTarget.mode == .background {
                             await phase("Writing in background")
+                            ComputeTarget.pin(.cpu)
                             iterator = try Device.withDefaultDevice(.cpu) {
                                 try TokenIterator(input: Self.continuing(input, with: tokens), model: context.model, parameters: parameters)
                             }
@@ -147,8 +197,9 @@ actor InferenceEngine {
                         }
                     } else if !onGPU && ComputeTarget.mode == .foreground {
                         onGPU = true // Back in the app: CPU results sit in shared memory, carry on on the GPU.
+                        ComputeTarget.pin(.gpu)
                     }
-                    guard let token = Device.withDefaultDevice(onGPU ? .gpu : .cpu, { iterator.next() }) else { break }
+                    guard let token = MLXGate.run({ Device.withDefaultDevice(onGPU ? .gpu : .cpu, { iterator.next() }) }) else { break }
                     if token == context.tokenizer.eosTokenId || token == context.tokenizer.unknownTokenId || eos.contains(token) { break }
                     tokens.append(token)
                     if tokens.count % 8 == 1 {

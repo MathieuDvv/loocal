@@ -90,11 +90,9 @@ final class VoiceConversation: ConversationSource {
     @ObservationIgnored private var tapInstalled = false
     /// Errand mode: what you say goes to this instead of the chat model, and its answer
     /// is spoken back. Nothing is added to the chat history.
-    @ObservationIgnored var respond: ((String) async -> String)? {
-        // Errands generate on MLX while the bot talks. The neural voice is MLX too, and
-        // MLX can't run from two places at once, so errand mode speaks with the system voice.
-        didSet { if respond != nil { systemVoiceOnly = true } }
-    }
+    /// Errands write on MLX while the bot talks with a natural voice, also MLX; the two take
+    /// turns through `MLXGate`, so errand mode keeps the voice chosen in Settings.
+    @ObservationIgnored var respond: ((String) async -> String)?
     @ObservationIgnored private var systemVoiceOnly = false
 
     /// A pause this long after speech ends your turn.
@@ -263,7 +261,11 @@ final class VoiceConversation: ConversationSource {
             do {
                 if SystemLanguageModel.default.isAvailable {
                     if self.session == nil { self.session = LanguageModelSession(instructions: self.instructions) }
-                    for try await snapshot in self.session!.streamResponse(to: said) {
+                    // Apple's model gets the same tools as the chat: actions, maths, places,
+                    // translation, the web and memory, worked out first and handed over with the question.
+                    let context = await self.store?.voiceContext(for: said) ?? ""
+                    let prompt = context.isEmpty ? said : "Use this, worked out by Loocal's tools for this question:\n\(context)\n\nThe user said: \(said)"
+                    for try await snapshot in self.session!.streamResponse(to: prompt) {
                         final = snapshot.content
                         self.received(final)
                     }

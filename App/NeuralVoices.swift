@@ -103,18 +103,22 @@ actor KokoroEngine {
         #if targetEnvironment(simulator)
         throw IslandError.message("Natural voices run on iPhone only.")
         #else
-        if tts == nil { tts = KokoroTTS(modelPath: directory.appendingPathComponent("kokoro-v1_0.safetensors")) }
-        let style: MLXArray
-        if let cached = styles[voice.id] { style = cached } else {
-            guard let loaded = try MLX.loadArrays(url: directory.appendingPathComponent("voices/\(voice.id).safetensors"))["voice"] else {
-                throw IslandError.message("The \(voice.name) voice file is unreadable.")
+        // Takes its turn on MLX: an errand or a chat reply may be writing at the same moment.
+        return try MLXGate.run {
+            Stream.gpu.synchronize() // let the other side's work in flight finish first
+            if tts == nil { tts = KokoroTTS(modelPath: directory.appendingPathComponent("kokoro-v1_0.safetensors")) }
+            let style: MLXArray
+            if let cached = styles[voice.id] { style = cached } else {
+                guard let loaded = try MLX.loadArrays(url: directory.appendingPathComponent("voices/\(voice.id).safetensors"))["voice"] else {
+                    throw IslandError.message("The \(voice.name) voice file is unreadable.")
+                }
+                styles[voice.id] = loaded
+                style = loaded
             }
-            styles[voice.id] = loaded
-            style = loaded
+            let (audio, _) = try tts!.generateAudio(voice: style, language: voice.british ? .enGB : .enUS, text: text)
+            Stream.gpu.synchronize()
+            return audio
         }
-        let (audio, _) = try tts!.generateAudio(voice: style, language: voice.british ? .enGB : .enUS, text: text)
-        GPU.clearCache()
-        return audio
         #endif
     }
 

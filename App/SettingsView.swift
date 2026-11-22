@@ -1,3 +1,4 @@
+import AppIntents
 import AVFoundation
 import SwiftUI
 
@@ -5,114 +6,57 @@ struct SettingsView: View {
     @Bindable var store: AppState
     @Binding var appearance: Appearance
     @Binding var addingPersona: Bool
-    @Namespace private var pill
     @State private var appeared = false
     @State private var editing: Persona?
-    @State private var voicePage = false
+    /// Owned by the root, so tab swipes can stand aside while a subpage is open.
+    @Binding var path: [SettingsPage]
 
     var body: some View {
-        NavigationStack {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                section("Models", order: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(ModelChoice.all.enumerated()), id: \.element.id) { i, choice in
-                            ModelRow(choice: choice, download: store.downloads[choice.id]!, selected: store.selectedModelID == choice.id) {
-                                withAnimation(.snappy) { store.selectedModelID = choice.id }
-                            }
-                            if i < ModelChoice.all.count - 1 { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 20) }
-                        }
+        NavigationStack(path: $path) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    Text("Settings").font(.serif(36)).tracking(-0.4).foregroundStyle(Ink.primary)
+                        .padding(.top, 8).padding(.leading, 4)
+                        .rise(appeared, delay: 0)
+                    group(order: 1) {
+                        row(.models, icon: "cpu", title: "Models", detail: modelDetail)
+                        divider
+                        row(.personas, icon: "theatermasks", title: "Personas", detail: personaDetail)
+                        divider
+                        row(.voice, icon: "waveform", title: "Voice", detail: VoiceLibrary.summary(store.neuralVoices))
+                        divider
+                        row(.memory, icon: "brain", title: "Memory", detail: memoryDetail)
                     }
-                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
+                    group(order: 2) {
+                        row(.appearance, icon: "circle.lefthalf.filled", title: "Appearance", detail: appearanceDetail)
+                        divider
+                        row(.shortcuts, icon: "square.2.layers.3d", title: "Shortcuts & Siri", detail: "Run errands and routines from Shortcuts")
+                    }
+                    Text("Loocal runs entirely on this iPhone.")
+                        .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.leading, 4)
+                        .rise(appeared, delay: 0.18)
                 }
-
-                section("Personas", order: 1) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(store.personas) { persona in
-                            PersonaRow(persona: persona, active: store.personaID == persona.id) { editing = persona }
-                                .transition(.scale(scale: 0.95).combined(with: .opacity))
-                        }
-                        if store.personas.count < Persona.limit {
-                            Button { editing = Persona(name: "", icon: Persona.icons[store.personas.count % Persona.icons.count], prompt: "") } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "plus").font(.system(size: 15)).frame(width: 40, height: 40)
-                                        .overlay(Circle().stroke(Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
-                                    Text("New persona").font(.geist(15, .medium))
-                                    Spacer()
-                                    Text("\(store.personas.count) of \(Persona.limit)").font(.geist(13).monospacedDigit()).foregroundStyle(Ink.tertiary)
-                                }
-                                .foregroundStyle(Ink.primary)
-                                .padding(12)
-                                .overlay(RoundedRectangle(cornerRadius: 20).stroke(Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
-                                .contentShape(.rect(cornerRadius: 20))
-                            }
-                            .buttonStyle(PressStyle(scale: 0.98))
-                            .accessibilityIdentifier("newPersona")
-                            .transition(.opacity)
-                        }
-                        Text("Hold the send button, or the errand bot, to switch personas.")
-                            .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.leading, 4)
-                    }
-                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: store.personas)
-                }
-
-                section("Voice", order: 2) {
-                    Button { voicePage = true } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: "waveform").font(.system(size: 15)).frame(width: 36, height: 36).background(Ink.fill, in: .circle)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(VoiceLibrary.summary(store.neuralVoices)).font(.geist(15, .medium)).foregroundStyle(Ink.primary)
-                                    .contentTransition(.opacity)
-                                Text("Conversation mode and Read Aloud").font(.geist(13)).foregroundStyle(Ink.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundStyle(Ink.tertiary)
-                        }
-                        .padding(12)
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Ink.hairline))
-                        .contentShape(.rect(cornerRadius: 20))
-                    }
-                    .buttonStyle(PressStyle(scale: 0.98))
-                    .accessibilityIdentifier("voiceRow")
-                }
-
-                section("Appearance", order: 3) {
-                    HStack(spacing: 4) {
-                        ForEach(Appearance.allCases) { option in
-                            let selected = appearance == option
-                            Button { withAnimation(.snappy(duration: 0.3)) { appearance = option } } label: {
-                                Text(option.label)
-                                    .font(.geist(14, .medium))
-                                    .foregroundStyle(selected ? Ink.primary : Ink.tertiary)
-                                    .frame(maxWidth: .infinity).frame(height: 38)
-                                    .background {
-                                        if selected {
-                                            Capsule().fill(Ink.paper)
-                                                .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
-                                                .matchedGeometryEffect(id: "appearance", in: pill)
-                                        }
-                                    }
-                                    .contentShape(.capsule)
-                            }
-                            .buttonStyle(PressStyle())
-                            .accessibilityAddTraits(selected ? [.isSelected] : [])
-                        }
-                    }
-                    .padding(4).background(Ink.fill, in: .capsule)
-                    .sensoryFeedback(.selection, trigger: appearance)
+                .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 32)
+            }
+            .scrollIndicators(.hidden)
+            .background(Ink.paper)
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: SettingsPage.self) { page in
+                switch page {
+                case .models: SettingsPageView(title: "Models") { modelsPage }
+                case .personas: SettingsPageView(title: "Personas") { personasPage }
+                case .voice: VoiceSettingsView(store: store)
+                case .memory: SettingsPageView(title: "Memory") { MemorySection(store: store) }
+                case .appearance: SettingsPageView(title: "Appearance") { AppearancePage(appearance: $appearance) }
+                case .shortcuts: SettingsPageView(title: "Shortcuts & Siri") { ShortcutsPage() }
                 }
             }
-            .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 32)
-        }
-        .scrollIndicators(.hidden)
-        .background(Ink.paper)
-        .toolbar(.hidden, for: .navigationBar)
-        .navigationDestination(isPresented: $voicePage) { VoiceSettingsView(store: store) }
         }
         .onAppear {
             appeared = true
             if addingPersona {
                 addingPersona = false
+                path = [.personas]
                 if store.personas.count < Persona.limit { editing = Persona(name: "", icon: Persona.icons[store.personas.count], prompt: "") }
             }
         }
@@ -121,12 +65,172 @@ struct SettingsView: View {
         }
     }
 
-    private func section<Content: View>(_ title: String, order: Int, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            SectionLabel(text: title)
-            content()
+    // MARK: Summaries on the main page
+
+    private var modelDetail: String {
+        let ready = store.download.isReady
+        return store.model.name + (ready ? " · ready" : " · not downloaded")
+    }
+
+    private var personaDetail: String {
+        if let active = store.personas.first(where: { $0.id == store.personaID }) { return "\(active.name) is on · \(store.personas.count) of \(Persona.limit)" }
+        return store.personas.isEmpty ? "None yet" : "\(store.personas.count) of \(Persona.limit) · none on"
+    }
+
+    private var memoryDetail: String {
+        guard store.memoryOn else { return "Off" }
+        return store.memories.isEmpty ? "Nothing saved yet" : "\(store.memories.count) thing\(store.memories.count == 1 ? "" : "s") remembered"
+    }
+
+    private var appearanceDetail: String {
+        appearance.label + " · " + (UIApplication.shared.alternateIconName == nil ? "Loop icon" : "Bot icon")
+    }
+
+    // MARK: Pieces
+
+    private var divider: some View { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 64) }
+
+    private func group(order: Int, @ViewBuilder content: () -> some View) -> some View {
+        VStack(spacing: 0) { content() }
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
+            .rise(appeared, delay: Double(order) * 0.06)
+    }
+
+    private func row(_ page: SettingsPage, icon: String, title: String, detail: String) -> some View {
+        Button { path.append(page) } label: {
+            HStack(spacing: 14) {
+                Image(systemName: icon).font(.system(size: 15)).foregroundStyle(Ink.primary)
+                    .frame(width: 36, height: 36).background(Ink.fill, in: .circle)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(.geist(15, .medium)).foregroundStyle(Ink.primary)
+                    Text(detail).font(.geist(13)).foregroundStyle(Ink.secondary).lineLimit(1)
+                        .contentTransition(.opacity)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right").font(.system(size: 12, weight: .medium)).foregroundStyle(Ink.tertiary)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 12)
+            .contentShape(.rect)
         }
-        .rise(appeared, delay: Double(order) * 0.06)
+        .buttonStyle(PressStyle(scale: 0.98))
+        .accessibilityIdentifier("settings." + title)
+    }
+
+    // MARK: Subpages
+
+    private var modelsPage: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(spacing: 0) {
+                ForEach(Array(ModelChoice.all.enumerated()), id: \.element.id) { i, choice in
+                    ModelRow(choice: choice, download: store.downloads[choice.id]!, selected: store.selectedModelID == choice.id) {
+                        withAnimation(.snappy) { store.selectedModelID = choice.id }
+                    }
+                    if i < ModelChoice.all.count - 1 { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 20) }
+                }
+            }
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
+            Text("Models download once, then run offline on this iPhone. Smaller ones answer faster.")
+                .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.horizontal, 4)
+        }
+    }
+
+    private var personasPage: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(store.personas) { persona in
+                PersonaRow(persona: persona, active: store.personaID == persona.id) { editing = persona }
+                    .transition(.scale(scale: 0.95).combined(with: .opacity))
+            }
+            if store.personas.count < Persona.limit {
+                Button { editing = Persona(name: "", icon: Persona.icons[store.personas.count % Persona.icons.count], prompt: "") } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "plus").font(.system(size: 15)).frame(width: 40, height: 40)
+                            .overlay(Circle().stroke(Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
+                        Text("New persona").font(.geist(15, .medium))
+                        Spacer()
+                        Text("\(store.personas.count) of \(Persona.limit)").font(.geist(13).monospacedDigit()).foregroundStyle(Ink.tertiary)
+                    }
+                    .foregroundStyle(Ink.primary)
+                    .padding(12)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Ink.hairline, style: StrokeStyle(lineWidth: 1, dash: [4, 4])))
+                    .contentShape(.rect(cornerRadius: 20))
+                }
+                .buttonStyle(PressStyle(scale: 0.98))
+                .accessibilityIdentifier("newPersona")
+                .transition(.opacity)
+            }
+            Text("Hold the send button, or the errand bot, to switch personas.")
+                .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.leading, 4)
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: store.personas)
+    }
+}
+
+enum SettingsPage: Hashable { case models, personas, voice, memory, appearance, shortcuts }
+
+/// A Settings subpage: back button and title, then the page, like Voice.
+struct SettingsPageView<Content: View>: View {
+    let title: String
+    @ViewBuilder var content: Content
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                HStack(spacing: 10) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left").font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Ink.primary).frame(width: 38, height: 38).background(Ink.fill, in: .circle)
+                    }
+                    .buttonStyle(PressStyle(scale: 0.88))
+                    .accessibilityLabel("Back")
+                    Text(title).font(.geist(17, .medium)).foregroundStyle(Ink.primary)
+                }
+                .padding(.top, 8)
+                content
+            }
+            .padding(.horizontal, 20).padding(.bottom, 32)
+        }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .background(Ink.paper)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+}
+
+/// Settings › Appearance: light or dark, and the home-screen icon.
+private struct AppearancePage: View {
+    @Binding var appearance: Appearance
+    @Namespace private var pill
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel(text: "Theme")
+            HStack(spacing: 4) {
+                ForEach(Appearance.allCases) { option in
+                    let selected = appearance == option
+                    Button { withAnimation(.snappy(duration: 0.3)) { appearance = option } } label: {
+                        Text(option.label)
+                            .font(.geist(14, .medium))
+                            .foregroundStyle(selected ? Ink.primary : Ink.tertiary)
+                            .frame(maxWidth: .infinity).frame(height: 38)
+                            .background {
+                                if selected {
+                                    Capsule().fill(Ink.paper)
+                                        .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
+                                        .matchedGeometryEffect(id: "appearance", in: pill)
+                                }
+                            }
+                            .contentShape(.capsule)
+                    }
+                    .buttonStyle(PressStyle())
+                    .accessibilityAddTraits(selected ? [.isSelected] : [])
+                }
+            }
+            .padding(4).background(Ink.fill, in: .capsule)
+            .sensoryFeedback(.selection, trigger: appearance)
+            SectionLabel(text: "App icon").padding(.top, 14)
+            IconPicker()
+        }
     }
 }
 
@@ -471,5 +575,162 @@ struct PersonaEditor: View {
                 .sensoryFeedback(.selection, trigger: persona.tint)
             }
         }
+    }
+}
+
+/// The home-screen icon: the loop, or the errand bot.
+private struct IconPicker: View {
+    @State private var current = UIApplication.shared.alternateIconName
+
+    var body: some View {
+        HStack(spacing: 14) {
+            option(nil, "Loop") {
+                LoopMarkShape()
+                    .stroke(Color.black, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                    .frame(width: 38, height: 19)
+            }
+            option("AppIconBot", "Bot") {
+                PebbleBot(mood: .neutral, shape: .pebble, size: 44, lively: false)
+                    .environment(\.colorScheme, .light)
+            }
+            Spacer(minLength: 0)
+        }
+        .sensoryFeedback(.selection, trigger: current)
+    }
+
+    private func option(_ name: String?, _ label: String, @ViewBuilder art: () -> some View) -> some View {
+        let selected = current == name
+        return Button {
+            guard UIApplication.shared.supportsAlternateIcons, !selected else { return }
+            UIApplication.shared.setAlternateIconName(name) { error in
+                if error == nil { Task { @MainActor in withAnimation(.snappy) { current = name } } }
+            }
+        } label: {
+            VStack(spacing: 8) {
+                art()
+                    .frame(width: 64, height: 64)
+                    .background(Color.white, in: .rect(cornerRadius: 15, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).stroke(Ink.hairline))
+                    .padding(3)
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Ink.primary, lineWidth: selected ? 2 : 0))
+                Text(label).font(.geist(13, .medium)).foregroundStyle(selected ? Ink.primary : Ink.secondary)
+            }
+        }
+        .buttonStyle(PressStyle(scale: 0.94))
+        .accessibilityLabel("\(label) app icon")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// What Loocal keeps in mind about you: say "remember that…" in a chat, or add it here.
+private struct MemorySection: View {
+    @Bindable var store: AppState
+    @State private var adding = ""
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Toggle(isOn: $store.memoryOn) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Use memory").font(.geist(15, .medium)).foregroundStyle(Ink.primary)
+                    Text("Say “remember that…” in a chat. Kept on this iPhone only.")
+                        .font(.geist(13)).foregroundStyle(Ink.secondary)
+                }
+            }
+            .tint(Ink.primary)
+            VStack(spacing: 0) {
+                ForEach(store.memories) { memory in
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(memory.text).font(.geist(14)).foregroundStyle(Ink.primary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { store.memories.removeAll { $0.id == memory.id } }
+                        } label: {
+                            Image(systemName: "xmark").font(.system(size: 11, weight: .semibold)).foregroundStyle(Ink.tertiary)
+                                .frame(width: 26, height: 26).contentShape(.rect)
+                        }
+                        .buttonStyle(PressStyle(scale: 0.85))
+                        .accessibilityLabel("Forget this")
+                    }
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 14)
+                }
+                HStack(spacing: 8) {
+                    TextField("Add something to remember", text: $adding)
+                        .font(.geist(14)).foregroundStyle(Ink.primary)
+                        .focused($focused)
+                        .submitLabel(.done)
+                        .onSubmit(add)
+                    if !adding.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Button(action: add) {
+                            Image(systemName: "arrow.up").font(.system(size: 12, weight: .semibold)).foregroundStyle(Ink.paper)
+                                .frame(width: 26, height: 26).background(Ink.primary, in: .circle)
+                        }
+                        .buttonStyle(PressStyle(scale: 0.85))
+                        .accessibilityLabel("Save memory")
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .padding(.horizontal, 14).frame(height: 48)
+            }
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(Ink.hairline))
+            .opacity(store.memoryOn ? 1 : 0.5)
+            .animation(.spring(response: 0.3), value: adding.isEmpty)
+        }
+    }
+
+    private func add() {
+        let text = adding.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { store.memories.insert(Memory(text: text), at: 0) }
+        adding = ""
+    }
+}
+
+/// Settings › Shortcuts & Siri: what Loocal adds to Shortcuts, and how to make routines
+/// run on time with an automation.
+private struct ShortcutsPage: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 0) {
+                item("figure.walk", "Run an Errand", "Opens Loocal and sends the bot off with your words.")
+                divider
+                item("clock", "Run a Routine", "Runs one of your routines now.")
+                divider
+                item("clock.badge.checkmark", "Run Due Routines", "Runs whatever is due. Made for automations.")
+                divider
+                item("bubble", "Open Loocal", "On a new chat, or on Errands.")
+            }
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
+            ShortcutsLink()
+                .shortcutsLinkStyle(.automaticOutline)
+                .frame(maxWidth: .infinity)
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "Routines on time")
+                Text("Routines only run while Loocal is open. To have them start by themselves: in Shortcuts › Automation, add a Time of Day automation, set it to Run Immediately, and pick “Run Due Routines”.")
+                    .font(.geist(14)).foregroundStyle(Ink.secondary).lineSpacing(3)
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "From a chat")
+                Text("Say “run my Morning shortcut” (or “… with some text”) and Loocal runs it. “Create a shortcut to…” opens a new one and walks you through the steps. iOS doesn’t let apps read or build your shortcuts themselves.")
+                    .font(.geist(14)).foregroundStyle(Ink.secondary).lineSpacing(3)
+            }
+        }
+    }
+
+    private var divider: some View { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 64) }
+
+    private func item(_ icon: String, _ title: String, _ detail: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon).font(.system(size: 15)).foregroundStyle(Ink.primary)
+                .frame(width: 36, height: 36).background(Ink.fill, in: .circle)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.geist(15, .medium)).foregroundStyle(Ink.primary)
+                Text(detail).font(.geist(13)).foregroundStyle(Ink.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
     }
 }

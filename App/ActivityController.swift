@@ -8,6 +8,8 @@ final class ActivityController {
     private var activity: Activity<InferenceAttributes>?
     private var lastUpdate = Date.distantPast
     var modelName = ModelChoice.standard.name
+    private var state = InferenceAttributes.ContentState(phase: "", detail: "", generatedPieces: 0, isRunning: true)
+    private var ticker: Task<Void, Never>?
 
     init() {
         let stale = Activity<InferenceAttributes>.activities
@@ -18,17 +20,31 @@ final class ActivityController {
 
     func start() {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-        let state = InferenceAttributes.ContentState(phase: "Loading model", detail: "On-device · \(modelName)", generatedPieces: 0, isRunning: true)
+        state = InferenceAttributes.ContentState(phase: "Loading model", detail: "On-device · \(modelName)", generatedPieces: 0, isRunning: true)
         do {
             activity = try Activity.request(attributes: InferenceAttributes(modelName: modelName, startedAt: .now), content: ActivityContent(state: state, staleDate: .now.addingTimeInterval(90)), pushType: nil)
         } catch { /* Activity permission does not prevent local inference. */ }
+        // A steady beat keeps the island's spiral writing, even while nothing else changes.
+        ticker?.cancel()
+        ticker = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+                guard let self, let activity = self.activity else { return }
+                self.state.tick += 1
+                await activity.update(ActivityContent(state: self.state, staleDate: .now.addingTimeInterval(90)))
+            }
+        }
     }
 
     func update(phase: String, count: Int, force: Bool = false) async {
-        guard let activity, force || Date().timeIntervalSince(lastUpdate) >= 2 else { return }
+        guard activity != nil, force || Date().timeIntervalSince(lastUpdate) >= 2 else { return }
         lastUpdate = .now
-        let detail = count == 0 ? "On-device · \(modelName)" : "\(count) tokens · up to \(ModelSpec.maxOutputTokens)"
-        await activity.update(ActivityContent(state: .init(phase: phase, detail: detail, generatedPieces: count, isRunning: true), staleDate: .now.addingTimeInterval(90)))
+        state.phase = phase
+        state.generatedPieces = count
+        state.detail = count == 0 ? "On-device · \(modelName)" : "\(count) tokens"
+        // The beat sends it, so the spiral's two-second glide isn't cut short; a phase change
+        // (Paused, say) goes out at once.
+        if force, let activity { await activity.update(ActivityContent(state: state, staleDate: .now.addingTimeInterval(90))) }
     }
 
     /// Ends the activity. In the app it goes away at once; from the background it shows the
@@ -36,6 +52,8 @@ final class ActivityController {
     func finish(phase: String, count: Int) {
         guard let current = activity else { return }
         activity = nil
+        ticker?.cancel()
+        ticker = nil
         let inApp = UIApplication.shared.applicationState == .active
         if !inApp { lingering.append(current) }
         Task {
@@ -98,7 +116,9 @@ final class ContinuedInference {
     /// where the device supports it, otherwise CPU-only (the app then generates on the CPU
     /// while backgrounded). If iOS declines, the reply still runs in the foreground.
     func begin(onLaunch: @escaping () -> Void, onExpire: @escaping () -> Void) {
-        guard registered else { onLaunch(); return }
+        // Without background GPU, iOS would only lend CPU time, far too slow for these models,
+        // and show its own wide banner. Replies pause instead, under Loocal's own small island.
+        guard registered, BGTaskScheduler.supportedResources.contains(.gpu) || ComputeTarget.backgroundCPU else { onLaunch(); return }
         // One job at a time, with an exact registered identifier. This also avoids
         // wildcard-matching failures seen in some OS scheduler implementations.
         let id = identifier

@@ -146,3 +146,21 @@ struct BottomFade: View {
         .allowsHitTesting(false)
     }
 }
+
+/// Our pages draw their own back button and hide the navigation bar, which also switches
+/// off iOS's swipe-from-the-edge to go back. This turns it back on for every pushed page.
+extension UINavigationController: @retroactive UIGestureRecognizerDelegate {
+    override open func viewDidLoad() {
+        super.viewDidLoad()
+        interactivePopGestureRecognizer?.delegate = self
+    }
+
+    public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        gestureRecognizer === interactivePopGestureRecognizer ? viewControllers.count > 1 : true
+    }
+
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy other: UIGestureRecognizer) -> Bool {
+        // The edge swipe wins over the page's own horizontal swipes.
+        gestureRecognizer === interactivePopGestureRecognizer
+    }
+}
