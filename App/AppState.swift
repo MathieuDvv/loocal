@@ -543,7 +543,7 @@ final class AppState {
     /// Voice turns are kept in the current chat, like typed ones.
     func recordVoiceTurn(user: String, reply: String) {
         guard !isBusy, !isDemo, let index = conversations.firstIndex(where: { $0.id == selectedID }) else { return }
-        conversations[index].messages.append(ChatMessage(role: .user, text: user))
+        conversations[index].append(ChatMessage(role: .user, text: user))
         conversations[index].messages.append(ChatMessage(role: .assistant, text: reply))
         save()
     }
@@ -593,7 +593,7 @@ final class AppState {
         attachedFiles = []
         draftIslands = []
         activeConnectors = []
-        conversations[index].messages.append(message)
+        conversations[index].append(message)
         draft = ""
         attachmentName = nil
         beginReply(in: index)
@@ -1001,7 +1001,8 @@ final class AppState {
     func continueInChat(_ run: ErrandRun) {
         newConversation()
         guard let index = conversations.firstIndex(where: { $0.id == selectedID }) else { return }
-        conversations[index].messages = [ChatMessage(role: .user, text: run.instructions), ChatMessage(role: .assistant, text: run.text)]
+        conversations[index].append(ChatMessage(role: .user, text: run.instructions))
+        conversations[index].append(ChatMessage(role: .assistant, text: run.text))
         save()
     }
 

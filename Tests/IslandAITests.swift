@@ -216,4 +216,14 @@ final class IslandAITests: XCTestCase {
         XCTAssertEqual(plan.kvPerToken, 8 * 8 * 256 * 4) // only the 8 global layers grow
         XCTAssertEqual(plan.fixedKV, 40 * 8 * 256 * 4 * 1024)
     }
+
+    func testFirstMessageDatesTheChat() {
+        let made = Date(timeIntervalSince1970: 1_000)
+        var chat = Conversation(createdAt: made)
+        let first = Date(timeIntervalSince1970: 50_000)
+        chat.append(.init(role: .user, text: "hello"), at: first)
+        XCTAssertEqual(chat.createdAt, first, "A blank chat reused hours later is dated by its first message")
+        chat.append(.init(role: .assistant, text: "hi"), at: Date(timeIntervalSince1970: 90_000))
+        XCTAssertEqual(chat.createdAt, first, "Later messages don't move it")
+    }
 }

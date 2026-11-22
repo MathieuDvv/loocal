@@ -156,6 +156,13 @@ struct Conversation: Identifiable, Codable, Sendable {
     var isPinned: Bool { pinned == true }
     var title: String { messages.first(where: { $0.role == .user }).map { String($0.readable.prefix(52)) } ?? "New conversation" }
 
+    /// Adds a message. The first one dates the chat: a blank chat can sit unused for hours
+    /// (New Chat reuses it), and History should show when you actually started it.
+    mutating func append(_ message: ChatMessage, at date: Date = .now) {
+        if messages.isEmpty { createdAt = date }
+        messages.append(message)
+    }
+
     mutating func recoverInterruptedReply() {
         for index in messages.indices where messages[index].status == .generating {
             messages[index].status = .interrupted
