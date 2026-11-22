@@ -135,6 +135,8 @@ actor InferenceEngine {
     private var directory: URL?
     /// The vision tower is on disk (lazy arrays), not in memory.
     private var visionParked = false
+    /// Only Qwen3 VL's vision tower is parked on disk between photos.
+    private var loadedFamily: ModelChoice.Family?
 
     /// One reply that is writing.
     private struct Lane {
@@ -176,6 +178,7 @@ actor InferenceEngine {
         plan = nil
         directory = nil
         visionParked = false
+        loadedFamily = nil
         #if !targetEnvironment(simulator)
         GPU.clearCache()
         #endif
@@ -289,10 +292,16 @@ actor InferenceEngine {
             self.plan = plan
             self.plan?.visionBytes = visionBytes
             visionParked = true
-        case .gemmaText:
+        case .gemmaText, .text:
             loaded = try await LLMModelFactory.shared.load(configuration: configuration)
             self.plan = plan
+        case .vision:
+            loaded = try await VLMModelFactory.shared.load(configuration: configuration)
+            self.plan = plan
+        case .image:
+            throw IslandError.message("\(model.name) makes pictures, and can’t chat.")
         }
+        loadedFamily = model.family
         context = loaded
         loadedID = model.id
         self.directory = directory
@@ -335,7 +344,7 @@ actor InferenceEngine {
     /// lazy arrays that read the same bytes from the model file, so they cost nothing until
     /// a photo is read, and that memory is free for replies the rest of the time.
     private func parkVision() {
-        guard let context, let directory else { return }
+        guard let context, let directory, loadedFamily == .qwenVL else { return }
         do {
             var weights: [String: MLXArray] = [:]
             for url in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) where url.pathExtension == "safetensors" {

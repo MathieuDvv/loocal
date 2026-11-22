@@ -102,6 +102,8 @@ final class DownloadDelegate: NSObject, URLSessionDownloadDelegate, @unchecked S
             throw error
         }
         let destination = directory.appendingPathComponent(file.name)
+        // Picture models keep their parts in subfolders (unet/, vae/…).
+        try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
         if FileManager.default.fileExists(atPath: destination.path) { try FileManager.default.removeItem(at: destination) }
         try FileManager.default.moveItem(at: source, to: destination)
         try FileManager.default.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: destination.path)
@@ -274,9 +276,22 @@ final class ModelDownload {
         try? fileManager.removeItem(at: staging)
         try fileManager.createDirectory(at: staging, withIntermediateDirectories: true)
         for file in spec.files {
+            try fileManager.createDirectory(at: staging.appendingPathComponent(file.name).deletingLastPathComponent(), withIntermediateDirectories: true)
             try fileManager.createSymbolicLink(at: staging.appendingPathComponent(file.name), withDestinationURL: directory.appendingPathComponent(file.name))
         }
         return staging
+    }
+
+    /// Stops any transfer and deletes the model's files, for a shared model being removed.
+    /// The session is let go too, so the model can be shared again later.
+    func remove() {
+        session.invalidateAndCancel()
+        isDownloading = false
+        verifiedNames = []
+        received = [:]
+        let fileManager = FileManager.default
+        try? fileManager.removeItem(at: directory)
+        try? fileManager.removeItem(at: directory.deletingLastPathComponent().appendingPathComponent(".load-" + directory.lastPathComponent, isDirectory: true))
     }
 
     private func schedule(_ request: URLRequest, as name: String) {

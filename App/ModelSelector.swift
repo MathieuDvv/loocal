@@ -37,7 +37,10 @@ struct ModelSelector: View {
                 Text(option.name)
                     .font(.geist(15, distance < 0.5 ? .medium : .regular))
                     .foregroundStyle(distance < 0.5 ? (dimmed ? Ink.secondary : Ink.primary) : Ink.tertiary)
-                    .lineLimit(1).fixedSize()
+                    .lineLimit(1)
+                    // Open, each name keeps to its slot so long shared names don't overlap.
+                    .frame(maxWidth: expanded ? slot - 10 : nil)
+                    .fixedSize(horizontal: !expanded, vertical: false)
                     .scaleEffect(1 - min(distance, 2) * 0.07)
                     .opacity(expanded ? max(0, 1 - distance * 0.42) : (distance < 0.5 ? 1 : 0))
                     .offset(x: (CGFloat(i) - live) * slot)

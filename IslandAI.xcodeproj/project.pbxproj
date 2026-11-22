@@ -33,8 +33,10 @@
 		8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
 		952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653CD09EBA0E45B6698638FA /* Errands.swift */; };
 		97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8276B61D49085B45D50D16D5 /* IslandApp.swift */; };
+		97F5EE7647F515ED8D9EACBC /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A3AEDC1B98C76F7E55DCA2 /* ShareViewController.swift */; };
 		9925B5EB86416C0BC6024D08 /* ConversationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A879FE06EA59ED8F7145E251 /* ConversationView.swift */; };
 		99A6E4E39C143EB2B4D34E1E /* InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */; };
+		99F34B6FF90C690EBAEF5FE2 /* ModelLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC33BEAB959FE713B7B0F478 /* ModelLibrary.swift */; };
 		A0372D2F8BC53C9A6C33D6F5 /* Islands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2F36B16ED4D4E0EF6929A8 /* Islands.swift */; };
 		AC64771E0C75CED968F124D1 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = 58EC7F8B908C0C25A7066F5F /* MLXVLM */; };
 		B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75DA7D97720043E121C40794 /* RootView.swift */; };
@@ -50,6 +52,7 @@
 		C7092A330AEEDE3678CDEB8F /* PebbleShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A93A19005CB149465B4F81 /* PebbleShape.swift */; };
 		C78FE146FF652F481EB922A1 /* IslandAITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 888CDB21A5E79F1F9B046FCA /* IslandAITests.swift */; };
 		C8CF5D110DCB12DBB35BDBC9 /* ModelManifest-4B.json in Resources */ = {isa = PBXBuildFile; fileRef = 1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */; };
+		CD3D744039DD2A9B368C376C /* ShareModel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C49DC7EB91A633B2821D87D2 /* ShareModel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CD507D0B4709AB33F0F7FA3F /* ErrandVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B510754321D34D88A6C0745B /* ErrandVoice.swift */; };
 		D48E718907D1ADAB97289036 /* IslandArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2ED77E356BE61C9CB65F7D6 /* IslandArt.swift */; };
 		D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE112B746F79F170DD202A0 /* Persona.swift */; };
@@ -91,6 +94,13 @@
 			remoteGlobalIDString = 94667A317E2016EAF3329C61;
 			remoteInfo = IslandAI;
 		};
+		F1F6CDD02BB403A5B9AB3D70 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4481DD075C6147CD48490DD2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 039D4F31653ED99E5C2BC516;
+			remoteInfo = ShareModel;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -101,6 +111,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */,
+				CD3D744039DD2A9B368C376C /* ShareModel.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -109,7 +120,9 @@
 
 /* Begin PBXFileReference section */
 		038CD122BC9D0155BEA30854 /* ConversationMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationMock.swift; sourceTree = "<group>"; };
+		03A3AEDC1B98C76F7E55DCA2 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		0499323687BFB77CDBEB840A /* ModelCompatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCompatibility.swift; sourceTree = "<group>"; };
+		0741AACCE21EB8A2C499E65C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		09C5F928206A791EF728C6F9 /* KokoroSwift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = KokoroSwift; path = Vendor/KokoroSwift; sourceTree = SOURCE_ROOT; };
 		1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ModelManifest-4B.json"; sourceTree = "<group>"; };
 		1C682F60E47498036B1A13FC /* OFL-Geist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-Geist.txt"; sourceTree = "<group>"; };
@@ -155,6 +168,7 @@
 		A879FE06EA59ED8F7145E251 /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		B510754321D34D88A6C0745B /* ErrandVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrandVoice.swift; sourceTree = "<group>"; };
 		BA835091533EFEC116B7DD0B /* ModelSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSpec.swift; sourceTree = "<group>"; };
+		C49DC7EB91A633B2821D87D2 /* ShareModel.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareModel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelector.swift; sourceTree = "<group>"; };
 		CBD10BD5F41D3E6D907AC504 /* Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Actions.swift; sourceTree = "<group>"; };
 		CC607114706BCC39FA6FEE51 /* SendControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendControl.swift; sourceTree = "<group>"; };
@@ -166,6 +180,7 @@
 		E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IslandAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FC33BEAB959FE713B7B0F478 /* ModelLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelLibrary.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -210,6 +225,7 @@
 				1F2F36B16ED4D4E0EF6929A8 /* Islands.swift */,
 				0499323687BFB77CDBEB840A /* ModelCompatibility.swift */,
 				D4BA4312590D86DAD8D87991 /* ModelDownload.swift */,
+				FC33BEAB959FE713B7B0F478 /* ModelLibrary.swift */,
 				1B67A0D08F8312011FBB2DCF /* ModelManifest-4B.json */,
 				CD130294271BFDBFE7439F2D /* ModelManifest-12B.json */,
 				A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */,
@@ -241,8 +257,18 @@
 				56F22ADBCFD16EF3DA90CADA /* IslandAI.app */,
 				F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */,
 				D9652090DAC1DCA562179F1E /* IslandAIUITests.xctest */,
+				C49DC7EB91A633B2821D87D2 /* ShareModel.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		72AC1FD54018C6FCB46FF706 /* ShareModel */ = {
+			isa = PBXGroup;
+			children = (
+				0741AACCE21EB8A2C499E65C /* Info.plist */,
+				03A3AEDC1B98C76F7E55DCA2 /* ShareViewController.swift */,
+			);
+			path = ShareModel;
 			sourceTree = "<group>";
 		};
 		7B69D82C5EADF2D318E976FE /* Fonts */ = {
@@ -280,6 +306,7 @@
 				E4B1C193DB4B9BB35D56F64F /* IslandActivity */,
 				96DF71676A2A9466EF192E47 /* Packages */,
 				FAB30F3B44022AE3051CFF9C /* Shared */,
+				72AC1FD54018C6FCB46FF706 /* ShareModel */,
 				AE2AC69A0D9A00F4EE6FF7A6 /* Tests */,
 				8B78818AC951307CCF764E08 /* UITests */,
 				6B2B9CDC3AF64AB199207CCC /* Products */,
@@ -316,6 +343,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		039D4F31653ED99E5C2BC516 /* ShareModel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 307CC0F341971AA9FDEF8149 /* Build configuration list for PBXNativeTarget "ShareModel" */;
+			buildPhases = (
+				95F3B6C9EA65122B80220C91 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShareModel;
+			packageProductDependencies = (
+			);
+			productName = ShareModel;
+			productReference = C49DC7EB91A633B2821D87D2 /* ShareModel.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		1020A359E12BAAECB6DF71B9 /* IslandAITests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9D690A2DF3DA2C155039C9F4 /* Build configuration list for PBXNativeTarget "IslandAITests" */;
@@ -347,6 +391,7 @@
 			);
 			dependencies = (
 				8D27C5BB1F25C19D983C9FD9 /* PBXTargetDependency */,
+				549B34B62B312490BA37422D /* PBXTargetDependency */,
 			);
 			name = IslandAI;
 			packageProductDependencies = (
@@ -405,6 +450,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					039D4F31653ED99E5C2BC516 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
 					1020A359E12BAAECB6DF71B9 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
@@ -447,6 +496,7 @@
 				1020A359E12BAAECB6DF71B9 /* IslandAITests */,
 				FCFF42FC9984C6A9308F3065 /* IslandAIUITests */,
 				F891903F78B38A0FBC63D373 /* IslandActivity */,
+				039D4F31653ED99E5C2BC516 /* ShareModel */,
 			);
 		};
 /* End PBXProject section */
@@ -504,6 +554,7 @@
 				EDD28EF4C59ABA18764ED95E /* LoopGeometry.swift in Sources */,
 				B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */,
 				6E96F0D63CF4EAE681DEEE55 /* ModelDownload.swift in Sources */,
+				99F34B6FF90C690EBAEF5FE2 /* ModelLibrary.swift in Sources */,
 				016266670CB51C68B2F64D91 /* ModelSelector.swift in Sources */,
 				5A1FAFB15B385B1D2FDEFAE5 /* ModelSpec.swift in Sources */,
 				F0A8CD412AA5CBD4004A455E /* NeuralVoices.swift in Sources */,
@@ -543,6 +594,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		95F3B6C9EA65122B80220C91 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				97F5EE7647F515ED8D9EACBC /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -555,6 +614,11 @@
 			isa = PBXTargetDependency;
 			target = 94667A317E2016EAF3329C61 /* IslandAI */;
 			targetProxy = 5E0CD63E3138F63849780341 /* PBXContainerItemProxy */;
+		};
+		549B34B62B312490BA37422D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 039D4F31653ED99E5C2BC516 /* ShareModel */;
+			targetProxy = F1F6CDD02BB403A5B9AB3D70 /* PBXContainerItemProxy */;
 		};
 		8D27C5BB1F25C19D983C9FD9 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -616,6 +680,23 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/IslandAI.app/IslandAI";
 			};
 			name = Debug;
+		};
+		3E96072CF3CE91C7CE7E84F5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				INFOPLIST_FILE = ShareModel/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.app.share;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
 		};
 		54C8EAC867F1BED82C26330C /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -835,9 +916,35 @@
 			};
 			name = Release;
 		};
+		F2DAD105E8E911C3E829A8BC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				INFOPLIST_FILE = ShareModel/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = local.islandai.app.share;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		307CC0F341971AA9FDEF8149 /* Build configuration list for PBXNativeTarget "ShareModel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F2DAD105E8E911C3E829A8BC /* Debug */,
+				3E96072CF3CE91C7CE7E84F5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		90735FB8467FA1AA34F74019 /* Build configuration list for PBXProject "IslandAI" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

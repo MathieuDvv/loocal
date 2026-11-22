@@ -22,31 +22,70 @@ struct ModelSpec: Codable, Sendable {
     }
 }
 
-/// The three models Loocal can download. Ordered small → large, which is also the
-/// left-to-right order of the model carousel.
-struct ModelChoice: Identifiable, Hashable, Sendable {
-    enum Family: Sendable { case qwenVL, gemmaText }
+/// A model Loocal can download: the three built in, plus any shared to it from Hugging Face.
+/// Chat models are listed small → large by parameters, which is also the left-to-right
+/// order of the model carousel.
+struct ModelChoice: Identifiable, Hashable, Sendable, Codable {
+    enum Family: String, Sendable, Codable {
+        /// Qwen3 VL, loaded with Loocal's own loader that keeps the vision tower on disk.
+        case qwenVL
+        /// Gemma 3 text: sliding-window layers, which change what its cache costs.
+        case gemmaText
+        /// Any other text model MLX can run.
+        case text
+        /// Any other model MLX can run that reads photos too.
+        case vision
+        /// Makes pictures. Kept in Settings, never offered for chat.
+        case image
+    }
     let id: String
     let name: String
     let detail: String
-    let manifest: String
+    /// The bundled manifest of a built-in model; shared models keep their spec beside them.
+    let manifest: String?
     /// Sub-folder of the models directory. The 8B predates multi-model support and keeps
     /// living at the root, so a download already in progress on a phone survives updates.
     let folder: String?
     let family: Family
+    /// Billions of parameters, for ordering.
+    var parameters: Double = 0
+    /// Shared from Hugging Face, so it can be removed again.
+    var custom = false
 
-    var vision: Bool { family == .qwenVL }
+    var vision: Bool { family == .qwenVL || family == .vision }
+    /// Chat models; picture models wait in Settings for now.
+    var chats: Bool { family != .image }
     /// Parallel byte-range downloads. Off for the 8B so a transfer already running on a
     /// phone keeps matching its original single-stream tasks after an update.
     var parallelDownload: Bool { folder != nil }
     var sessionID: String { folder == nil ? ModelDownload.sessionID : ModelDownload.sessionID + "." + id }
-    var stopTokens: Set<String> { family == .gemmaText ? ["<end_of_turn>"] : ["<|im_end|>"] }
+    var stopTokens: Set<String> {
+        switch family {
+        case .gemmaText: ["<end_of_turn>"]
+        case .qwenVL: ["<|im_end|>"]
+        case .text, .vision, .image: Self.stopTokens(for: id)
+        }
+    }
 
-    static let small = ModelChoice(id: "qwen3-vl-4b", name: "Qwen3 VL 4B", detail: "Faster · words and vision", manifest: "ModelManifest-4B", folder: "Qwen3-VL-4B", family: .qwenVL)
-    static let standard = ModelChoice(id: "qwen3-vl-8b", name: "Qwen3 VL 8B", detail: "Balanced · words and vision", manifest: "ModelManifest", folder: nil, family: .qwenVL)
-    static let large = ModelChoice(id: "gemma-3-12b", name: "Gemma 3 12B", detail: "Deepest · words only", manifest: "ModelManifest-12B", folder: "Gemma-3-12B", family: .gemmaText)
+    /// Shared models end their turn the way their family does; the rest rely on the
+    /// tokenizer's own end-of-sequence token.
+    static func stopTokens(for id: String) -> Set<String> {
+        let id = id.lowercased()
+        if id.contains("gemma") { return ["<end_of_turn>"] }
+        if id.contains("qwen") { return ["<|im_end|>"] }
+        return []
+    }
+
+    static let small = ModelChoice(id: "qwen3-vl-4b", name: "Qwen3 VL 4B", detail: "Faster · words and vision", manifest: "ModelManifest-4B", folder: "Qwen3-VL-4B", family: .qwenVL, parameters: 4)
+    static let standard = ModelChoice(id: "qwen3-vl-8b", name: "Qwen3 VL 8B", detail: "Balanced · words and vision", manifest: "ModelManifest", folder: nil, family: .qwenVL, parameters: 8)
+    static let large = ModelChoice(id: "gemma-3-12b", name: "Gemma 3 12B", detail: "Deepest · words only", manifest: "ModelManifest-12B", folder: "Gemma-3-12B", family: .gemmaText, parameters: 12)
+    /// The built-in models, which can't be removed.
     static let all = [small, standard, large]
-    static func with(id: String) -> ModelChoice { all.first { $0.id == id } ?? standard }
+
+    /// Smallest first; equal sizes by name.
+    static func ordered(_ models: [ModelChoice]) -> [ModelChoice] {
+        models.sorted { ($0.parameters, $0.name.lowercased()) < ($1.parameters, $1.name.lowercased()) }
+    }
 }
 
 enum IslandError: LocalizedError {

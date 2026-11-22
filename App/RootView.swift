@@ -96,7 +96,14 @@ struct RootView: View {
         // A temporary chat is always dark, so it's obvious at a glance you're off the record.
         .preferredColorScheme(tab == .chat && store.isTemporary ? .dark : appearance.scheme)
         .animation(.smooth(duration: 0.35), value: appearance)
-        .onOpenURL { url in if url.host() != "shortcut-done" { go(.chat) } }
+        .onOpenURL { url in
+            if let link = Self.sharedModelLink(url) {
+                Task { await store.addModel(from: link) }
+            } else if url.host() != "shortcut-done" { go(.chat) }
+        }
+        // A model shared from Hugging Face: show it in Settings › Models.
+        .onChange(of: store.revealedModelID) { _, id in if id != nil { settingsPath = [.models] } }
+        .onChange(of: store.addingModel) { _, adding in if adding != nil { settingsPath = [.models] } }
         .onChange(of: store.requestedTab) { _, requested in
             guard let requested else { return }
             store.requestedTab = nil
@@ -185,6 +192,15 @@ struct RootView: View {
         let order = AppTab.allCases.sorted { $0.order < $1.order }
         guard let index = order.firstIndex(of: tab), order.indices.contains(index + step) else { return nil }
         return order[index + step]
+    }
+
+    /// The page behind `loocal://add-model?url=…` (from the share sheet; its own scheme, as
+    /// older Island builds also answer `islandai://`), or a Hugging Face link opened directly.
+    static func sharedModelLink(_ url: URL) -> URL? {
+        if ["loocal", "islandai"].contains(url.scheme), url.host() == "add-model" {
+            return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "url" }?.value.flatMap(URL.init(string:))
+        }
+        return url.scheme?.hasPrefix("http") == true ? url : nil
     }
 
     private func go(_ destination: AppTab, animation: Animation = .spring(response: 0.42, dampingFraction: 0.88)) {
@@ -505,7 +521,7 @@ struct ChatView: View {
 
     /// The model selector, with the chat fading out under it as it scrolls up.
     private var selectorBar: some View {
-        ModelSelector(options: ModelChoice.all, disabled: store.isWorking, selection: $store.selectedModelID, dimmed: !store.download.isReady)
+        ModelSelector(options: store.chatModels, disabled: store.isWorking, selection: $store.selectedModelID, dimmed: !store.download.isReady)
             .frame(maxWidth: .infinity)
             .padding(.top, 6).padding(.bottom, 8)
             .overlay(alignment: .bottom) {

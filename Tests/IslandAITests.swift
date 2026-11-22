@@ -71,7 +71,7 @@ final class IslandAITests: XCTestCase {
         XCTAssertEqual(Set(ModelChoice.all.map(\.sessionID)).count, 3, "Each model needs its own background session")
         XCTAssertEqual(ModelChoice.standard.sessionID, ModelDownload.sessionID, "The 8B keeps its original session so in-flight downloads survive updates")
         for choice in ModelChoice.all {
-            let spec = try ModelSpec.bundled(choice.manifest)
+            let spec = try ModelSpec.bundled(try XCTUnwrap(choice.manifest))
             XCTAssertEqual(spec.revision.count, 40, choice.id)
             XCTAssertTrue(spec.files.contains { $0.name == "config.json" }, choice.id)
             for file in spec.files where file.name.hasSuffix(".safetensors") {
@@ -79,6 +79,62 @@ final class IslandAITests: XCTestCase {
             }
         }
         XCTAssertFalse(ModelChoice.large.vision)
+    }
+
+    func testSharedLinksNameTheModelRepository() throws {
+        XCTAssertEqual(try ModelLibrary.repository(from: URL(string: "https://huggingface.co/mlx-community/Qwen3-4B-4bit")!), "mlx-community/Qwen3-4B-4bit")
+        XCTAssertEqual(try ModelLibrary.repository(from: URL(string: "https://huggingface.co/mlx-community/Qwen3-4B-4bit/tree/main")!), "mlx-community/Qwen3-4B-4bit")
+        XCTAssertEqual(try ModelLibrary.repository(from: URL(string: "https://hf.co/models/google/gemma-3-4b-it/blob/main/config.json")!), "google/gemma-3-4b-it")
+        XCTAssertEqual(try ModelLibrary.repository(from: URL(string: "https://www.huggingface.co/a/b?x=1")!), "a/b")
+        XCTAssertThrowsError(try ModelLibrary.repository(from: URL(string: "https://huggingface.co/datasets/a/b")!))
+        XCTAssertThrowsError(try ModelLibrary.repository(from: URL(string: "https://huggingface.co/spaces/a/b")!))
+        XCTAssertThrowsError(try ModelLibrary.repository(from: URL(string: "https://huggingface.co/mlx-community")!))
+        XCTAssertThrowsError(try ModelLibrary.repository(from: URL(string: "https://example.com/a/b")!))
+        XCTAssertEqual(RootView.sharedModelLink(URL(string: "loocal://add-model?url=https%3A%2F%2Fhuggingface.co%2Fa%2Fb")!), URL(string: "https://huggingface.co/a/b"))
+        XCTAssertNil(RootView.sharedModelLink(URL(string: "islandai://shortcut-done")!))
+    }
+
+    func testSharedModelsGetShortNamesAndSizes() {
+        XCTAssertEqual(ModelLibrary.shortName("mlx-community/Llama-3.2-3B-Instruct-4bit"), "Llama 3.2 3B")
+        XCTAssertEqual(ModelLibrary.shortName("mlx-community/gemma-3-4b-it-qat-4bit"), "Gemma 3 4B")
+        XCTAssertEqual(ModelLibrary.shortName("mlx-community/Qwen3-VL-2B-Instruct-8bit"), "Qwen3 VL 2B")
+        XCTAssertLessThanOrEqual(ModelLibrary.shortName("someone/an-extremely-long-model-name-that-goes-on-and-on").count, 22)
+        XCTAssertEqual(ModelLibrary.parameters(in: "mlx-community/Llama-3.2-3B-Instruct-4bit"), 3)
+        XCTAssertEqual(ModelLibrary.parameters(in: "mlx-community/Qwen2.5-0.5B-Instruct-4bit"), 0.5)
+        XCTAssertEqual(ModelLibrary.parameters(in: "mlx-community/Qwen3-30B-A3B-4bit"), 30)
+        XCTAssertEqual(ModelLibrary.parameters(in: "mlx-community/gemma-3-270m-it-4bit"), 0.27)
+        XCTAssertNil(ModelLibrary.parameters(in: "mlx-community/SmolLM-Instruct"))
+    }
+
+    func testSharedModelsSortIntoTheCatalogAndPictureModelsStayOutOfChat() throws {
+        let tiny = ModelChoice(id: "hf.a/tiny", name: "Tiny 1B", detail: "", manifest: nil, folder: "Shared/a--tiny", family: .text, parameters: 1, custom: true)
+        let mid = ModelChoice(id: "hf.a/mid", name: "Mid 9B", detail: "", manifest: nil, folder: "Shared/a--mid", family: .vision, parameters: 9, custom: true)
+        let picture = ModelChoice(id: "hf.a/pic", name: "Pic", detail: "", manifest: nil, folder: "Shared/a--pic", family: .image, parameters: 2, custom: true)
+        let ordered = ModelChoice.ordered(ModelChoice.all + [mid, picture, tiny])
+        XCTAssertEqual(ordered.map(\.id), ["hf.a/tiny", "hf.a/pic", "qwen3-vl-4b", "qwen3-vl-8b", "hf.a/mid", "gemma-3-12b"])
+        XCTAssertFalse(picture.chats)
+        XCTAssertTrue(mid.vision && !tiny.vision)
+        XCTAssertNotEqual(mid.sessionID, ModelChoice.small.sessionID)
+        let decoded = try JSONDecoder().decode(ModelChoice.self, from: JSONEncoder().encode(mid))
+        XCTAssertEqual(decoded, mid)
+        XCTAssertEqual(try ModelLibrary.family(type: "qwen3_vl", vision: true, repository: "x"), .qwenVL)
+        XCTAssertEqual(try ModelLibrary.family(type: "gemma3", vision: true, repository: "x"), .vision)
+        XCTAssertEqual(try ModelLibrary.family(type: "gemma3_text", vision: false, repository: "x"), .gemmaText)
+        XCTAssertEqual(try ModelLibrary.family(type: "llama", vision: false, repository: "x"), .text)
+        XCTAssertThrowsError(try ModelLibrary.family(type: "mamba", vision: false, repository: "x"))
+    }
+
+    func testSharedModelsFetchOnlyWhatMLXLoads() {
+        struct F: SiblingLike { var name: String; var bytes: Int64?; var hash: String? }
+        let listing = [F(name: ".gitattributes", bytes: 1), F(name: "README.md", bytes: 1), F(name: "config.json", bytes: 10),
+                       F(name: "model.safetensors", bytes: 100, hash: "abc"), F(name: "pytorch_model.bin", bytes: 100),
+                       F(name: "tokenizer.json", bytes: 5), F(name: "onnx/model.onnx", bytes: 9), F(name: "extra/model.safetensors", bytes: 9)]
+        XCTAssertEqual(ModelLibrary.wanted(listing, keepFolders: false).map(\.name), ["config.json", "model.safetensors", "tokenizer.json"])
+        XCTAssertEqual(ModelLibrary.wanted(listing, keepFolders: false).first { $0.name == "model.safetensors" }?.sha256, "abc")
+        XCTAssertTrue(ModelLibrary.wanted(listing, keepFolders: true).contains { $0.name == "extra/model.safetensors" })
+        let pipeline = [F(name: "model_index.json", bytes: 1), F(name: "sd_turbo.safetensors", bytes: 9), F(name: "unet/diffusion_pytorch_model.safetensors", bytes: 9),
+                        F(name: "unet/diffusion_pytorch_model.fp16.safetensors", bytes: 5), F(name: "vae/diffusion_pytorch_model.safetensors", bytes: 3)]
+        XCTAssertEqual(ModelLibrary.wanted(pipeline, keepFolders: true).map(\.name), ["model_index.json", "unet/diffusion_pytorch_model.fp16.safetensors", "vae/diffusion_pytorch_model.safetensors"])
     }
 
     func testPersonasAreCappedAtThree() {

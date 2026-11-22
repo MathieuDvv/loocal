@@ -119,19 +119,59 @@ struct SettingsView: View {
     // MARK: Subpages
 
     private var modelsPage: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            VStack(spacing: 0) {
-                ForEach(Array(ModelChoice.all.enumerated()), id: \.element.id) { i, choice in
-                    ModelRow(choice: choice, download: store.downloads[choice.id]!, selected: store.selectedModelID == choice.id) {
-                        withAnimation(.snappy) { store.selectedModelID = choice.id }
+        let chat = store.models.filter(\.chats)
+        let pictures = store.models.filter { !$0.chats }
+        return VStack(alignment: .leading, spacing: 10) {
+            modelCard(chat, adding: store.addingModel)
+            Text("Models download once, then run offline on this iPhone. Smaller ones answer faster. To add one, share its Hugging Face page to Loocal.")
+                .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.horizontal, 4)
+            if !pictures.isEmpty {
+                SectionLabel(text: "Pictures").padding(.top, 14)
+                modelCard(pictures, adding: nil)
+                Text("Picture models can download now. Making pictures with them comes later.")
+                    .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.horizontal, 4)
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: store.models.map(\.id))
+        .animation(.smooth(duration: 0.3), value: store.addingModel)
+        .task(id: store.revealedModelID) {
+            // The model just shared stays marked a moment, then the mark fades.
+            guard store.revealedModelID != nil else { return }
+            try? await Task.sleep(for: .seconds(2.5))
+            withAnimation(.smooth(duration: 0.6)) { store.revealedModelID = nil }
+        }
+    }
+
+    private func modelCard(_ models: [ModelChoice], adding: String?) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Array(models.enumerated()), id: \.element.id) { i, choice in
+                if let download = store.downloads[choice.id] {
+                    SwipeToRemove(enabled: choice.custom, name: choice.name) {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { store.removeModel(choice) }
+                    } content: { swiping in
+                        ModelRow(choice: choice, download: download, selected: store.selectedModelID == choice.id, revealed: store.revealedModelID == choice.id) {
+                            guard !swiping else { return } // a swipe never also picks the row
+                            withAnimation(.snappy) { store.selectedModelID = choice.id }
+                        }
                     }
-                    if i < ModelChoice.all.count - 1 { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 20) }
+                    if i < models.count - 1 || adding != nil { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.leading, 20) }
                 }
             }
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
-            Text("Models download once, then run offline on this iPhone. Smaller ones answer faster.")
-                .font(.geist(13)).foregroundStyle(Ink.tertiary).padding(.horizontal, 4)
+            if let adding {
+                HStack(spacing: 12) {
+                    SpiralLoader(size: 16)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Adding model").font(.geist(16, .medium)).foregroundStyle(Ink.primary)
+                        Text(adding).font(.geist(13)).foregroundStyle(Ink.secondary).lineLimit(1).truncationMode(.middle)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
         }
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
     }
 
     private var personasPage: some View {
@@ -240,18 +280,32 @@ private struct ModelRow: View {
     let choice: ModelChoice
     @Bindable var download: ModelDownload
     let selected: Bool
+    var revealed = false
     let select: () -> Void
+
+    private var tooBig: Bool { ModelFit.mayNotFit(download.spec) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
                 Button(action: select) {
                     HStack(spacing: 12) {
-                        Circle()
-                            .strokeBorder(selected ? Ink.primary : Ink.hairline, lineWidth: selected ? 5.5 : 1.5)
-                            .frame(width: 18, height: 18)
+                        if choice.chats {
+                            Circle()
+                                .strokeBorder(selected ? Ink.primary : Ink.hairline, lineWidth: selected ? 5.5 : 1.5)
+                                .frame(width: 18, height: 18)
+                        } else {
+                            Image(systemName: "photo").font(.system(size: 13)).foregroundStyle(Ink.secondary).frame(width: 18, height: 18)
+                        }
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(choice.name).font(.geist(16, .medium)).foregroundStyle(Ink.primary)
+                            HStack(spacing: 6) {
+                                Text(choice.name).font(.geist(16, .medium)).foregroundStyle(Ink.primary).lineLimit(1)
+                                if tooBig {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 11, weight: .semibold)).foregroundStyle(.orange)
+                                        .accessibilityLabel("May be too big for this iPhone")
+                                }
+                            }
                             Text("\(choice.detail) · \(ByteCountFormatter.string(fromByteCount: download.spec.totalBytes, countStyle: .file))")
                                 .font(.geist(13)).foregroundStyle(Ink.secondary)
                         }
@@ -260,6 +314,7 @@ private struct ModelRow: View {
                     .contentShape(.rect)
                 }
                 .buttonStyle(PressStyle(scale: 0.98))
+                .disabled(!choice.chats)
                 .accessibilityAddTraits(selected ? [.isSelected] : [])
                 trailing
             }
@@ -280,6 +335,7 @@ private struct ModelRow: View {
             }
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
+        .background(revealed ? Ink.fill : Ink.paper)
         .animation(.smooth(duration: 0.35), value: download.isDownloading)
         .animation(.smooth(duration: 0.35), value: download.isReady)
         .animation(.smooth(duration: 0.35), value: download.error)
@@ -314,6 +370,73 @@ private struct ModelRow: View {
             }
         }
         .transition(.blurReplace)
+    }
+}
+
+/// Swipe a row left to show Remove, or all the way to remove it, like a chat in History.
+private struct SwipeToRemove<Content: View>: View {
+    let enabled: Bool
+    let name: String
+    let remove: () -> Void
+    /// Told whether a swipe is under way, so the row's own tap doesn't also fire.
+    @ViewBuilder var content: (Bool) -> Content
+
+    @State private var offset: CGFloat = 0
+    @State private var open = false
+    @State private var width: CGFloat = 0
+    @State private var swiping = false
+    private let reveal: CGFloat = 84
+    private let spring = Animation.spring(response: 0.35, dampingFraction: 0.85)
+
+    var body: some View {
+        if enabled {
+            ZStack(alignment: .trailing) {
+                Button(role: .destructive) { removeNow() } label: {
+                    Image(systemName: "trash").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                        .frame(width: max(-offset, 0)).frame(maxHeight: .infinity)
+                        .background(.red)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
+                content(swiping)
+                    .overlay {
+                        // While Remove shows, a tap on the row closes it instead.
+                        if open { Color.clear.contentShape(.rect).onTapGesture { close() } }
+                    }
+                    .offset(x: offset)
+            }
+            .clipped()
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 16)
+                    .onChanged { value in
+                        guard swiping || abs(value.translation.width) > abs(value.translation.height) else { return }
+                        swiping = true
+                        offset = min(0, (open ? -reveal : 0) + value.translation.width)
+                    }
+                    .onEnded { value in
+                        Task { try? await Task.sleep(for: .milliseconds(200)); swiping = false }
+                        guard swiping else { return }
+                        let end = (open ? -reveal : 0) + value.predictedEndTranslation.width
+                        if offset < -width * 0.6 || end < -width * 0.9 { removeNow(); return }
+                        withAnimation(spring) {
+                            open = end < -reveal / 2
+                            offset = open ? -reveal : 0
+                        }
+                    }
+            )
+            .sensoryFeedback(.impact(weight: .light), trigger: open) { _, now in now }
+            .accessibilityAction(named: "Remove \(name)") { remove() }
+        } else {
+            content(false)
+        }
+    }
+
+    private func close() { withAnimation(spring) { open = false; offset = 0 } }
+
+    private func removeNow() {
+        withAnimation(.smooth(duration: 0.25)) { offset = -width }
+        remove()
     }
 }
 

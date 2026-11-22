@@ -53,6 +53,7 @@ targets:
     - package: KokoroSwift
       product: KokoroSwift
     - target: IslandActivity
+    - target: ShareModel
     scheme:
       testTargets:
       - IslandAITests
@@ -67,6 +68,18 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: local.islandai.app.activity
         INFOPLIST_FILE: IslandActivity/Info.plist
+        SKIP_INSTALL: true
+        APPLICATION_EXTENSION_API_ONLY: true
+  # "Loocal" in the share sheet: share a Hugging Face model page to add it to the models.
+  ShareModel:
+    type: app-extension
+    platform: iOS
+    sources:
+    - ShareModel
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.islandai.app.share
+        INFOPLIST_FILE: ShareModel/Info.plist
         SKIP_INSTALL: true
         APPLICATION_EXTENSION_API_ONLY: true
   IslandAITests:

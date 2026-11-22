@@ -8,7 +8,17 @@ import MLX
 final class AppState {
     let files: LocalFiles
     /// One download per model, keyed by `ModelChoice.id`.
-    let downloads: [String: ModelDownload]
+    private(set) var downloads: [String: ModelDownload]
+    /// Models shared to Loocal from Hugging Face, on top of the three built in.
+    private(set) var sharedModels: [SharedModel] { didSet { ModelLibrary.save(sharedModels, files) } }
+    /// Every model, small → large. Picture models are among them, for Settings.
+    var models: [ModelChoice] { ModelChoice.ordered(ModelChoice.all + sharedModels.map(\.choice)) }
+    /// The models a chat can use, for the carousel.
+    var chatModels: [ModelChoice] { models.filter(\.chats) }
+    /// A Hugging Face model being looked up after it was shared.
+    var addingModel: String?
+    /// The model just shared: Settings › Models opens on it and it's marked a moment.
+    var revealedModelID: String?
     /// Open-source Kokoro voices for speech output.
     let neuralVoices: NeuralVoiceStore
     /// Errands: one-off and scheduled jobs the model carries out on device.
@@ -63,7 +73,7 @@ final class AppState {
     /// Short UIKit grace period, used only when iOS declined the continued-processing task.
     @ObservationIgnored private var graceTask: UIBackgroundTaskIdentifier = .invalid
 
-    var model: ModelChoice { ModelChoice.with(id: selectedModelID) }
+    var model: ModelChoice { chatModels.first { $0.id == selectedModelID } ?? .standard }
     var download: ModelDownload { downloads[model.id]! }
     var persona: Persona? { personas.first { $0.id == personaID } }
     var systemPrompt: String {
@@ -81,13 +91,16 @@ final class AppState {
         desk = ErrandDesk(directory: files.root)
         var downloads: [String: ModelDownload] = [:]
         for choice in ModelChoice.all {
-            let directory = choice.folder.map { files.models.appendingPathComponent($0, isDirectory: true) } ?? files.models
-            downloads[choice.id] = ModelDownload(spec: try .bundled(choice.manifest), directory: directory, sessionID: choice.sessionID, chunked: choice.parallelDownload)
+            downloads[choice.id] = Self.download(choice, spec: try .bundled(choice.manifest ?? "ModelManifest"), files: files)
         }
+        let shared = ModelLibrary.load(files)
+        for model in shared { downloads[model.choice.id] = Self.download(model.choice, spec: model.spec, files: files) }
         self.downloads = downloads
+        sharedModels = shared
         neuralVoices = NeuralVoiceStore(models: files.models)
         VoiceLibrary.preload()
-        selectedModelID = ModelChoice.with(id: UserDefaults.standard.string(forKey: "model") ?? "").id
+        let saved = UserDefaults.standard.string(forKey: "model") ?? ""
+        selectedModelID = (ModelChoice.all + shared.map(\.choice)).first { $0.id == saved && $0.chats }?.id ?? ModelChoice.standard.id
         let savedPersonas = Persona.load()
         personas = savedPersonas
         BotShape.sync(savedPersonas)
@@ -118,6 +131,50 @@ final class AppState {
         if self.error == nil {
             files.sweep(keeping: Set(conversations.flatMap { $0.messages.compactMap(\.imageName) }))
         }
+    }
+
+    private static func download(_ choice: ModelChoice, spec: ModelSpec, files: LocalFiles) -> ModelDownload {
+        let directory = choice.folder.map { files.models.appendingPathComponent($0, isDirectory: true) } ?? files.models
+        return ModelDownload(spec: spec, directory: directory, sessionID: choice.sessionID, chunked: choice.parallelDownload)
+    }
+
+    // MARK: Shared models
+
+    /// A link shared to Loocal: a Hugging Face model page joins the models, not downloaded
+    /// yet, and Settings › Models opens on it.
+    func addModel(from link: URL) async {
+        let repository: String
+        do { repository = try ModelLibrary.repository(from: link) } catch { self.error = error.localizedDescription; return }
+        requestedTab = .settings
+        if let known = models.first(where: { $0.id == "hf." + repository.lowercased() || downloads[$0.id]?.spec.repository.lowercased() == repository.lowercased() }) {
+            revealedModelID = known.id
+            notice = "\(known.name) is already in your models."
+            return
+        }
+        guard addingModel == nil else { return }
+        addingModel = repository
+        defer { addingModel = nil }
+        do {
+            let model = try await ModelLibrary.fetch(repository)
+            guard !models.contains(where: { $0.id == model.choice.id }) else { revealedModelID = model.choice.id; return }
+            downloads[model.choice.id] = Self.download(model.choice, spec: model.spec, files: files)
+            sharedModels.append(model)
+            revealedModelID = model.choice.id
+        } catch {
+            self.error = (error as? URLError).map { _ in "Hugging Face couldn’t be reached. Check your connection and share the model again." } ?? error.localizedDescription
+        }
+    }
+
+    /// Takes a shared model off the list and deletes whatever of it was downloaded.
+    /// The three built-in models stay.
+    func removeModel(_ choice: ModelChoice) {
+        guard choice.custom else { return }
+        guard !isWorking else { notice = "Wait for the replies being written to finish, then remove \(choice.name)."; return }
+        if selectedModelID == choice.id { selectedModelID = ModelChoice.standard.id }
+        downloads[choice.id]?.remove()
+        downloads[choice.id] = nil
+        sharedModels.removeAll { $0.choice.id == choice.id }
+        Task { await engine.unload() }
     }
 
     /// Conversations worth listing in History (blank drafts are hidden).

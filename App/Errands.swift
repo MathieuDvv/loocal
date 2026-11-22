@@ -387,7 +387,7 @@ struct ErrandView: View {
 
     private var page: some View {
         VStack(spacing: 0) {
-            ModelSelector(options: ModelChoice.all, disabled: store.isWorking, selection: $store.selectedModelID, dimmed: !store.download.isReady)
+            ModelSelector(options: store.chatModels, disabled: store.isWorking, selection: $store.selectedModelID, dimmed: !store.download.isReady)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6).padding(.bottom, 8)
                 .dismissesKeyboardOnTap()
