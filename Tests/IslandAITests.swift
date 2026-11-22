@@ -165,6 +165,27 @@ final class IslandAITests: XCTestCase {
         XCTAssertFalse(staging.path.hasPrefix(root.path + "/"), "The load folder must sit outside the model folder")
     }
 
+    func testIslandsReadByNameForTheModelAndVanishForTools() {
+        let maps = Island.connector(.maps), file = Island(kind: .file, ref: "f", title: "notes.md", icon: "doc", tint: .amber)
+        let text = "Find a café \(maps.marker) near the place in \(file.marker)"
+        XCTAssertEqual(IslandText.spoken(text, [maps, file]), "Find a café [Maps] near the place in [the attached file “notes.md”]")
+        XCTAssertEqual(IslandText.titled(text, [maps, file]), "Find a café Maps near the place in notes.md")
+        XCTAssertEqual(IslandText.stripped(text), "Find a café near the place in")
+        XCTAssertEqual(IslandText.present(in: "Find \(maps.marker)", [maps, file]).map(\.id), [maps.id])
+    }
+
+    func testIslandsSurviveTheArchiveAndUnknownMarkersDrop() throws {
+        let maps = Island.connector(.maps)
+        var message = ChatMessage(role: .user, text: "Coffee \(maps.marker) ⟦gone⟧")
+        message.islands = [maps]
+        let decoded = try JSONDecoder().decode(ChatMessage.self, from: JSONEncoder().encode(message))
+        XCTAssertEqual(decoded.islands, [maps])
+        XCTAssertEqual(decoded.readable, "Coffee Maps ")
+        var use = ToolUse(kind: "calc", icon: "function", running: "", done: "")
+        use.widget = .map(title: "café", pins: [.init(name: "Lomi", detail: "650 m", latitude: 48.9, longitude: 2.35)], here: nil)
+        XCTAssertEqual(try JSONDecoder().decode(ToolUse.self, from: JSONEncoder().encode(use)).widget, use.widget)
+    }
+
     func testMemoryPlanSizesTheKVCacheFromTheModelConfig() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

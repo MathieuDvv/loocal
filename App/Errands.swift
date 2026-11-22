@@ -385,7 +385,7 @@ struct ErrandView: View {
 
     private var page: some View {
         VStack(spacing: 0) {
-            ModelSelector(options: ModelChoice.all, disabled: store.isBusy, selection: $store.selectedModelID, dimmed: !store.download.isReady)
+            ModelSelector(options: ModelChoice.all, disabled: store.isWorking, selection: $store.selectedModelID, dimmed: !store.download.isReady)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 6).padding(.bottom, 8)
                 .dismissesKeyboardOnTap()
@@ -1300,7 +1300,7 @@ struct ErrandRunSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     ErrandHeader(run: run)
-                    ErrandBody(run: run, phase: store.phase)
+                    ErrandBody(run: run, phase: store.phases[run.id] ?? "")
                     if run.isActive {
                         Button { store.cancelErrand(run) } label: {
                             Label("Stop", systemImage: "stop.fill").font(.geist(13, .medium)).foregroundStyle(Ink.primary)
@@ -1394,7 +1394,7 @@ private struct RoutineCard: View {
                 Spacer(minLength: 8)
                 Menu {
                     Button("Run now", systemImage: "bolt") { store.runErrand(title: errand.title, instructions: errand.instructions, sources: errand.sources, errandID: errand.id) }
-                        .disabled(store.isBusy)
+                        .disabled(store.desk.active.count >= AppState.crewSize)
                     Button(errand.paused ? "Resume" : "Pause", systemImage: errand.paused ? "play" : "pause") { withAnimation(.smooth) { store.desk.togglePause(errand) } }
                     Button("Delete", systemImage: "trash", role: .destructive) { withAnimation(.smooth) { store.desk.delete(errand) } }
                 } label: {

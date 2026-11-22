@@ -16,7 +16,8 @@ struct Connector: Identifiable, Hashable {
     static let clipboard = Connector(id: "clipboard", name: "Clipboard", icon: "doc.on.clipboard", detail: "What you last copied")
     static let wikipedia = Connector(id: "wikipedia", name: "Wikipedia", icon: "globe", detail: "Looks your question up online")
     static let web = Connector(id: "web", name: "Web search", icon: "magnifyingglass", detail: "Lets the model search the web")
-    static let builtIn = [web, calendar, reminders, clipboard, wikipedia]
+    static let maps = Connector(id: "maps", name: "Maps", icon: "map", detail: "Searches Apple Maps around you")
+    static let builtIn = [web, maps, calendar, reminders, clipboard, wikipedia]
 
     /// The box shown in a reply when this source is read.
     var use: ToolUse {
