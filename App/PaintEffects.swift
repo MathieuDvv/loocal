@@ -16,6 +16,9 @@ struct PaintInfusion: View {
     @State private var start = Date.now
 
     static var duration: Double { 1.3 * pace }
+    /// When the paint covers the whole page (it has reached the bottom, and the drain hasn't
+    /// cleared the top yet): what's under it can change unseen.
+    static var coveredAt: Double { 0.55 * pace }
     /// `-slowPour` (debug builds) plays it five times slower, to look at it closely.
     #if DEBUG
     static let pace: Double = ProcessInfo.processInfo.arguments.contains("-slowPour") ? 5 : 1

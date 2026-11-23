@@ -109,7 +109,14 @@ struct RootView: View {
         }
         .onChange(of: store.isPainting) { _, painting in
             pendingPour = painting && tab == .chat && !reduceMotion
-            if !painting { pour = nil }
+            if !painting {
+                pour = nil
+                // Back to chat: the painter's page simply fades out.
+                withAnimation(.smooth(duration: 0.45)) { store.easelShown = false }
+            } else if !pendingPour {
+                // No pour to hide the change behind: a fade, the same way.
+                withAnimation(.smooth(duration: 0.45)) { store.easelShown = true }
+            }
         }
         .onChange(of: store.selectorClosed) { _, _ in
             guard pendingPour, store.isPainting, let name = store.paintModel?.name else { return }
@@ -117,10 +124,20 @@ struct RootView: View {
             Task {
                 // Let the capsule's closing spring settle onto its resting size first.
                 try? await Task.sleep(for: .milliseconds(220))
-                guard store.isPainting, let center = ModelSelector.screenCenter else { return }
+                guard store.isPainting, let center = ModelSelector.screenCenter else {
+                    withAnimation(.smooth(duration: 0.45)) { store.easelShown = store.isPainting }
+                    return
+                }
                 let wash = Pour(origin: center, pill: ModelSelector.restingSize(name), name: name)
                 pour = wash
-                try? await Task.sleep(for: .seconds(PaintInfusion.duration + 0.1))
+                // The page changes underneath while the paint covers it, and shows as it drains.
+                try? await Task.sleep(for: .seconds(PaintInfusion.coveredAt))
+                if pour?.id == wash.id, store.isPainting {
+                    var instant = Transaction()
+                    instant.disablesAnimations = true
+                    withTransaction(instant) { store.easelShown = true }
+                }
+                try? await Task.sleep(for: .seconds(PaintInfusion.duration - PaintInfusion.coveredAt + 0.1))
                 if pour?.id == wash.id { pour = nil }
             }
         }
@@ -449,7 +466,7 @@ struct ChatView: View {
         VStack(spacing: 0) {
             ZStack {
                 if store.current.messages.isEmpty {
-                    EmptyChatView(temporary: store.isTemporary, painting: store.isPainting, toggleTemporary: store.toggleTemporary)
+                    EmptyChatView(temporary: store.isTemporary, painting: store.easelShown, toggleTemporary: store.toggleTemporary)
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 } else {
                     transcript.id(store.selectedID)
@@ -952,7 +969,6 @@ struct EmptyChatView: View {
                 chat.transition(.opacity)
             }
         }
-        .animation(.smooth(duration: 0.45), value: painting)
         .onAppear { appeared = true }
     }
 

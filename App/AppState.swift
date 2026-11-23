@@ -35,6 +35,9 @@ final class AppState {
             else { paintModelID = nil; selectedModelID = newValue }
         }
     }
+    /// The empty chat shows the painter's page (title, village). It follows `isPainting`,
+    /// but on the way in it changes under the pour, while the paint covers the screen.
+    var easelShown = false
     /// Counts the chat selector closing, so the pour waits until it has settled.
     var selectorClosed = 0
     /// How far each picture being painted has got, by reply id.
@@ -121,7 +124,9 @@ final class AppState {
         self.downloads = downloads
         sharedModels = shared
         let paint = UserDefaults.standard.string(forKey: "model.paint")
-        paintModelID = shared.contains { $0.choice.id == paint && !$0.choice.chats } ? paint : nil
+        let picture = shared.contains { $0.choice.id == paint && !$0.choice.chats } ? paint : nil
+        paintModelID = picture
+        easelShown = picture != nil
         neuralVoices = NeuralVoiceStore(models: files.models)
         VoiceLibrary.preload()
         let saved = UserDefaults.standard.string(forKey: "model") ?? ""
