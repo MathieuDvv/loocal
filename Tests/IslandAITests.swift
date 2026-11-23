@@ -156,7 +156,7 @@ final class IslandAITests: XCTestCase {
         Persona.save([])
     }
 
-    func testChunkPlanCoversEveryByteOnceAndStitchesBack() throws {
+    func testChunkPlanCoversEveryByteAndPiecesLandInPlace() throws {
         let plan = DownloadPlan(chunked: true)
         let big = ModelSpec.File(name: "w.safetensors", size: DownloadPlan.chunkSize * 3 + 17, sha256: nil)
         let ranges = plan.ranges(for: big)
@@ -174,17 +174,26 @@ final class IslandAITests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let payload = Data((0..<10_000).map { UInt8($0 % 251) })
-        let parts = stride(from: 0, to: payload.count, by: 3_000).enumerated().map { i, start -> URL in
-            let url = root.appendingPathComponent("p\(i)")
-            try? payload[start..<min(start + 3_000, payload.count)].write(to: url)
-            return url
+        let out = DownloadPlan.partialURL(root, "out")
+        // Pieces land in any order, each written straight into its place.
+        for start in stride(from: 0, to: payload.count, by: 3_000).reversed() {
+            let piece = root.appendingPathComponent("piece\(start)")
+            try payload[start..<min(start + 3_000, payload.count)].write(to: piece)
+            try DownloadDelegate.place(piece, into: out, at: Int64(start))
         }
-        let out = root.appendingPathComponent("out")
-        try DownloadDelegate.assemble(parts, into: out)
         XCTAssertEqual(try Data(contentsOf: out), payload)
-        XCTAssertFalse(parts.contains { FileManager.default.fileExists(atPath: $0.path) }, "Parts are removed as they are stitched")
         let hash = SHA256.hash(data: payload).map { String(format: "%02x", $0) }.joined()
         XCTAssertNoThrow(try DownloadDelegate.verify(out, file: .init(name: "out", size: Int64(payload.count), sha256: hash)))
+        // A piece counts as in once its marker is empty, or (older builds) holds the whole piece.
+        let marker = DownloadPlan.partURL(root, "w.safetensors", 0)
+        XCTAssertFalse(plan.isDone(root, "w.safetensors", 0, 0...99))
+        try DownloadDelegate.mark(marker)
+        XCTAssertTrue(plan.isDone(root, "w.safetensors", 0, 0...99))
+        // A file an older build stitched but never verified is treated as fully downloaded.
+        let whole = ModelSpec.File(name: "big.safetensors", size: DownloadPlan.chunkSize * 2, sha256: nil)
+        FileManager.default.createFile(atPath: DownloadPlan.assemblingURL(root, whole.name).path, contents: nil)
+        try FileHandle(forWritingTo: DownloadPlan.assemblingURL(root, whole.name)).truncate(atOffset: UInt64(whole.size))
+        XCTAssertTrue(plan.awaitsCompletion(whole, in: root))
         XCTAssertTrue(ModelChoice.small.parallelDownload && ModelChoice.large.parallelDownload)
         XCTAssertFalse(ModelChoice.standard.parallelDownload)
     }
