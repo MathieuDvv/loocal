@@ -42,6 +42,8 @@ struct ToolTrail: View {
             ZStack {
                 if running != nil {
                     SpiralLoader(size: 12, color: Ink.secondary).transition(.scale.combined(with: .opacity))
+                } else if let single, let logo = ToolStep.logo(single) {
+                    IntegrationLogo(integration: logo, size: 14).transition(.scale.combined(with: .opacity))
                 } else {
                     Image(systemName: single.map(ToolStep.icon) ?? "square.stack.3d.up")
                         .font(.system(size: 12, weight: .medium))
@@ -85,6 +87,7 @@ private struct ToolStep: View {
             HStack(spacing: 7) {
                 ZStack {
                     if use.status == .running { SpiralLoader(size: 11, color: Ink.secondary) }
+                    else if let logo = Self.logo(use) { IntegrationLogo(integration: logo, size: 13) }
                     else { Image(systemName: Self.icon(use)).font(.system(size: 11, weight: .medium)) }
                 }
                 .frame(width: 14)
@@ -94,6 +97,11 @@ private struct ToolStep: View {
             .foregroundStyle(Ink.secondary)
             Self.details(use).padding(.leading, 21)
         }
+    }
+
+    /// Integrations sign their finished steps with their own little logo.
+    static func logo(_ use: ToolUse) -> Integration? {
+        use.status == .done ? Integration.with(connectorID: use.kind) : nil
     }
 
     static func icon(_ use: ToolUse) -> String {
@@ -128,7 +136,9 @@ private struct SourceLink: View {
         Button { openURL(link.url) } label: {
             HStack(spacing: 6) {
                 Text(link.title).font(.geist(13)).foregroundStyle(Ink.secondary).lineLimit(1)
-                Text(link.host).font(.geist(12)).foregroundStyle(Ink.tertiary).lineLimit(1).layoutPriority(-1)
+                if link.url.scheme?.hasPrefix("http") == true {
+                    Text(link.host).font(.geist(12)).foregroundStyle(Ink.tertiary).lineLimit(1).layoutPriority(-1)
+                }
                 Image(systemName: "arrow.up.right").font(.system(size: 9, weight: .semibold)).foregroundStyle(Ink.tertiary)
             }
             .contentShape(.rect)

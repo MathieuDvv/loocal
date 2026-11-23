@@ -13,6 +13,7 @@
 		136F488D86D3CB4F17F1A640 /* VoiceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */; };
 		1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 2EFC775D79FAA810A07FC584 /* MLXLLM */; };
 		146C3E5C757B217457692BAF /* Duplex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C95C03FC296086FAED5CBF1 /* Duplex.swift */; };
+		184CFC5D1E4605938148EEB3 /* Integrations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7804A7BA84E5D9F7C30EDFC7 /* Integrations.swift */; };
 		1FC1E3C87C397890E14C2BC1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89540703F336453E33FF870C /* AppState.swift */; };
 		20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */; };
 		21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -43,6 +44,7 @@
 		99F34B6FF90C690EBAEF5FE2 /* ModelLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC33BEAB959FE713B7B0F478 /* ModelLibrary.swift */; };
 		A0372D2F8BC53C9A6C33D6F5 /* Islands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2F36B16ED4D4E0EF6929A8 /* Islands.swift */; };
 		A722A67AF00CAC2BFF39D0DA /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = 1C586BCA27A84EA6D3F67A47 /* StableDiffusion */; };
+		A8C0F870ADC780325BF94A3C /* IntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420CB8DFE00693380FBDAC58 /* IntegrationTests.swift */; };
 		AC64771E0C75CED968F124D1 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = 58EC7F8B908C0C25A7066F5F /* MLXVLM */; };
 		B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75DA7D97720043E121C40794 /* RootView.swift */; };
 		B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0499323687BFB77CDBEB840A /* ModelCompatibility.swift */; };
@@ -61,6 +63,7 @@
 		CD507D0B4709AB33F0F7FA3F /* ErrandVoice.swift in Sources */ = {isa = PBXBuildFile; fileRef = B510754321D34D88A6C0745B /* ErrandVoice.swift */; };
 		D48E718907D1ADAB97289036 /* IslandArt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2ED77E356BE61C9CB65F7D6 /* IslandArt.swift */; };
 		D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EE112B746F79F170DD202A0 /* Persona.swift */; };
+		D9EF29CF2F77D86662762497 /* IntegrationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F2AC8D7C03233ED356AB04 /* IntegrationViews.swift */; };
 		DD49C1EF17756C7E87EE657E /* Geist-Variable.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */; };
 		DEEFD896F00008699064FA46 /* InstrumentSerif-Italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A584D86BF61A02E2AA988694 /* InstrumentSerif-Italic.ttf */; };
 		E111E174E3575366B91AC573 /* Handwriting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87AFFA346D470E5B565BB57B /* Handwriting.swift */; };
@@ -146,6 +149,7 @@
 		35120B9AF11145D8D365941E /* ActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityController.swift; sourceTree = "<group>"; };
 		39249B8F90D2351AB47E609D /* Painter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Painter.swift; sourceTree = "<group>"; };
 		3EE112B746F79F170DD202A0 /* Persona.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persona.swift; sourceTree = "<group>"; };
+		420CB8DFE00693380FBDAC58 /* IntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationTests.swift; sourceTree = "<group>"; };
 		46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceConversation.swift; sourceTree = "<group>"; };
 		4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Variable.ttf"; sourceTree = "<group>"; };
 		52DF1164C0FC428CA3505149 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -157,6 +161,7 @@
 		6C95C03FC296086FAED5CBF1 /* Duplex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Duplex.swift; sourceTree = "<group>"; };
 		713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NeuralVoices.swift; sourceTree = "<group>"; };
 		75DA7D97720043E121C40794 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		7804A7BA84E5D9F7C30EDFC7 /* Integrations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Integrations.swift; sourceTree = "<group>"; };
 		78B4F4D0D4352D22486C7B11 /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		7C61B5681A805AD496C0BD0C /* IslandField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslandField.swift; sourceTree = "<group>"; };
 		7D39C08CE2E7A866A9842C14 /* AudioLines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLines.swift; sourceTree = "<group>"; };
@@ -177,6 +182,7 @@
 		A879FE06EA59ED8F7145E251 /* ConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationView.swift; sourceTree = "<group>"; };
 		B510754321D34D88A6C0745B /* ErrandVoice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrandVoice.swift; sourceTree = "<group>"; };
 		BA835091533EFEC116B7DD0B /* ModelSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSpec.swift; sourceTree = "<group>"; };
+		C0F2AC8D7C03233ED356AB04 /* IntegrationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationViews.swift; sourceTree = "<group>"; };
 		C49DC7EB91A633B2821D87D2 /* ShareModel.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = ShareModel.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelSelector.swift; sourceTree = "<group>"; };
 		CBD10BD5F41D3E6D907AC504 /* Actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Actions.swift; sourceTree = "<group>"; };
@@ -231,6 +237,8 @@
 				87AFFA346D470E5B565BB57B /* Handwriting.swift */,
 				98188F04F715A4D855A9C698 /* InferenceEngine.swift */,
 				2918A7036AEB2BE8A68F1259 /* Info.plist */,
+				7804A7BA84E5D9F7C30EDFC7 /* Integrations.swift */,
+				C0F2AC8D7C03233ED356AB04 /* IntegrationViews.swift */,
 				D4C618DFD3763EE7405E3D03 /* IslandAI.entitlements */,
 				8276B61D49085B45D50D16D5 /* IslandApp.swift */,
 				A2ED77E356BE61C9CB65F7D6 /* IslandArt.swift */,
@@ -334,6 +342,7 @@
 		AE2AC69A0D9A00F4EE6FF7A6 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				420CB8DFE00693380FBDAC58 /* IntegrationTests.swift */,
 				888CDB21A5E79F1F9B046FCA /* IslandAITests.swift */,
 			);
 			path = Tests;
@@ -547,6 +556,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A8C0F870ADC780325BF94A3C /* IntegrationTests.swift in Sources */,
 				C78FE146FF652F481EB922A1 /* IslandAITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -569,6 +579,8 @@
 				E111E174E3575366B91AC573 /* Handwriting.swift in Sources */,
 				8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */,
 				C6835E22DC2A078BEA210B81 /* InferenceEngine.swift in Sources */,
+				D9EF29CF2F77D86662762497 /* IntegrationViews.swift in Sources */,
+				184CFC5D1E4605938148EEB3 /* Integrations.swift in Sources */,
 				97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */,
 				D48E718907D1ADAB97289036 /* IslandArt.swift in Sources */,
 				F4251C90B9BF7252ADB8A821 /* IslandField.swift in Sources */,

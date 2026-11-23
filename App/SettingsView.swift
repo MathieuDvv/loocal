@@ -26,6 +26,8 @@ struct SettingsView: View {
                         row(.voice, icon: "waveform", title: "Voice", detail: VoiceLibrary.summary(store.neuralVoices))
                         divider
                         row(.memory, icon: "brain", title: "Memory", detail: memoryDetail)
+                        divider
+                        row(.integrations, icon: "square.grid.2x2", title: "Integrations", detail: integrationsDetail)
                     }
                     group(order: 2) {
                         row(.appearance, icon: "circle.lefthalf.filled", title: "Appearance", detail: appearanceDetail)
@@ -49,6 +51,7 @@ struct SettingsView: View {
                 case .memory: SettingsPageView(title: "Memory") { MemorySection(store: store) }
                 case .appearance: SettingsPageView(title: "Appearance") { AppearancePage(appearance: $appearance) }
                 case .shortcuts: SettingsPageView(title: "Shortcuts & Siri") { ShortcutsPage() }
+                case .integrations: SettingsPageView(title: "Integrations") { IntegrationsPage(store: store) }
                 }
             }
         }
@@ -80,6 +83,12 @@ struct SettingsView: View {
     private var memoryDetail: String {
         guard store.memoryOn else { return "Off" }
         return store.memories.isEmpty ? "Nothing saved yet" : "\(store.memories.count) thing\(store.memories.count == 1 ? "" : "s") remembered"
+    }
+
+    private var integrationsDetail: String {
+        let names = store.integrations.connected.map(\.name)
+        guard !names.isEmpty else { return "GitHub, Health, Claude and more" }
+        return "\(names.count) connected · " + names.prefix(3).joined(separator: ", ") + (names.count > 3 ? "…" : "")
     }
 
     private var appearanceDetail: String {
@@ -205,7 +214,7 @@ struct SettingsView: View {
     }
 }
 
-enum SettingsPage: Hashable { case models, personas, voice, memory, appearance, shortcuts }
+enum SettingsPage: Hashable { case models, personas, voice, memory, appearance, shortcuts, integrations }
 
 /// A Settings subpage: back button and title, then the page, like Voice.
 struct SettingsPageView<Content: View>: View {

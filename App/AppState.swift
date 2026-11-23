@@ -69,7 +69,9 @@ final class AppState {
     var attachedFiles: [AttachedFile] = []
     var activeConnectors: Set<String> { didSet { UserDefaults.standard.set(Array(activeConnectors), forKey: "connectors.active") } }
     var mcpServers: [MCPServer] { didSet { MCPServer.save(mcpServers) } }
-    var connectors: [Connector] { Connector.builtIn + mcpServers.map(Connector.mcp) }
+    var connectors: [Connector] { Connector.builtIn + integrations.connectors + mcpServers.map(Connector.mcp) }
+    /// Apps connected from Settings › Integrations, and the ones found on this iPhone.
+    let integrations = IntegrationCenter()
     /// Replies and errands on the go, by reply or run id: several write at once.
     private(set) var working: Set<UUID> = []
     /// Conversations with a reply on the way.
@@ -589,6 +591,12 @@ final class AppState {
 
     func toggleConnector(_ connector: Connector) async {
         if activeConnectors.contains(connector.id) { activeConnectors.remove(connector.id); return }
+        if let integration = Integration.with(connectorID: connector.id) {
+            if integrations.needsKey(integration) { error = "Add your \(integration.keyLabel) in Settings › Integrations › \(integration.name)."; return }
+            guard await IntegrationHub.requestAccess(integration) else { error = "Allow Loocal to access \(integration.name) in the Settings app to use it."; return }
+            activeConnectors.insert(connector.id)
+            return
+        }
         guard await ConnectorHub.requestAccess(for: connector.id) else {
             error = "Allow Loocal to access \(connector.name) in Settings to use it."
             return
@@ -832,6 +840,32 @@ final class AppState {
                     for box in boxes { finishTool(box.id, conversationID, replyID, failed: box.kind == Connector.wikipedia.id && !context.contains("Wikipedia —")) }
                     if !context.isEmpty { system += "\n\n" + context }
                 }
+                // Integrations placed in the prompt: each read now, in parallel, each its own step.
+                let picked = Integration.all.filter { active.contains($0.connectorID) }
+                var drafts: [(Integration, UUID, String?)] = []
+                if !picked.isEmpty {
+                    await setPhase(replyID, "Checking " + ListFormatter.localizedString(byJoining: picked.map(\.name)))
+                    let steps = picked.map(IntegrationHub.step)
+                    for step in steps { addTool(step, conversationID, replyID) }
+                    let keys = picked.map { integrations.key($0) }
+                    let findings = await withTaskGroup(of: (Int, IntegrationFinding).self) { group in
+                        for (i, integration) in picked.enumerated() {
+                            group.addTask { (i, await IntegrationHub.read(integration, question: question, key: keys[i])) }
+                        }
+                        var all: [Int: IntegrationFinding] = [:]
+                        for await (i, found) in group { all[i] = found }
+                        return all
+                    }
+                    for (i, integration) in picked.enumerated() {
+                        guard let found = findings[i] else { continue }
+                        if let text = found.text { system += "\n\n" + text }
+                        var step = steps[i]
+                        step.detail = found.detail
+                        replaceTool(step, conversationID, replyID)
+                        if integration.drafts && !found.failed { drafts.append((integration, step.id, found.recipient)) }
+                        else { finishTool(step.id, conversationID, replyID, failed: found.failed, links: found.links) }
+                    }
+                }
                 // Something to do, not just answer: done first, then the reply confirms it.
                 if let action = ToolAction.detect(question) {
                     await setPhase(replyID, action.box.running)
@@ -858,6 +892,11 @@ final class AppState {
                     await self.received(text, count: count, conversationID: conversationID, replyID: replyID)
                 }, phase: { phase in await self.setPhase(replyID, phase) })
                 try Task.checkCancellation()
+                // Messages and Mail: the reply is the draft, one tap from sending.
+                for (integration, stepID, recipient) in drafts {
+                    let link = IntegrationHub.draftLink(integration, reply: result.text, recipient: recipient)
+                    finishTool(stepID, conversationID, replyID, failed: link == nil, links: link.map { [$0] } ?? [])
+                }
                 if conversationID == selectedID {
                     performance = "\(result.tokens) tokens · \(String(format: "%.1f", Double(result.tokens) / max(result.seconds, 0.001))) tok/s · \(result.headroom) MB free"
                 }
@@ -1162,6 +1201,11 @@ final class AppState {
                 try? await Task.sleep(for: .seconds(Double.random(in: 0.8...2.2)))
             } else {
                 context = await ConnectorHub.context(for: active, prompt: run.instructions)
+                // Errands read their integrations too (drafting ones just shape the writing).
+                for integration in Integration.all where active.contains(integration.connectorID) && !integration.drafts {
+                    let found = await IntegrationHub.read(integration, question: run.instructions, key: self.integrations.key(integration))
+                    if let text = found.text { context += (context.isEmpty ? "" : "\n\n") + text }
+                }
                 if !refusal.isEmpty { context += (context.isEmpty ? "" : "\n\n") + refusal }
             }
             if self.desk.runs.first(where: { $0.id == run.id })?.status == .queued { self.desk.setStage(run.id, ErrandRun.nextUp) }

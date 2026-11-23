@@ -3,7 +3,7 @@ import SwiftUI
 enum AttachAction: Equatable {
     case photos, camera, files
     case toggle(Connector)
-    case addServer
+    case manageIntegrations
 }
 
 // MARK: - Tray
@@ -14,13 +14,20 @@ enum AttachAction: Equatable {
 struct AttachControl: View {
     @Binding var open: Bool
     let connectors: [Connector]
+    /// Connected integrations, shown by their logos on their own page of the tray.
+    var integrations: [Integration] = []
     let active: Set<String>
     let vision: Bool
     let act: (AttachAction) -> Void
 
-    private enum Page { case main, connectors }
-    private enum Kind: Equatable { case action(AttachAction), connectors, back }
-    private struct Item: Identifiable { let id: String; let icon: String; let on: Bool; let enabled: Bool; let kind: Kind }
+    private enum Page { case main, connectors, integrations }
+    private enum Kind: Equatable { case action(AttachAction), connectors, integrations, back }
+    private enum Art { case symbol, logo(Integration), grid }
+    private struct Item: Identifiable {
+        let id: String; let icon: String; let on: Bool; let enabled: Bool; let kind: Kind
+        var art: Art = .symbol
+        var label: String { if case .logo(let integration) = art { integration.name } else { id.capitalized } }
+    }
 
     @State private var page: Page = .main
     @State private var pressing = false
@@ -46,7 +53,11 @@ struct AttachControl: View {
         case .connectors:
             return [Item(id: "back", icon: "chevron.left", on: false, enabled: true, kind: .back)]
                 + connectors.map { Item(id: $0.id, icon: $0.icon, on: active.contains($0.id), enabled: true, kind: .action(.toggle($0))) }
-                + [Item(id: "server", icon: "server.rack", on: false, enabled: true, kind: .action(.addServer))]
+                + [Item(id: "integrations", icon: "square.grid.2x2", on: integrations.contains { active.contains($0.connectorID) }, enabled: true, kind: .integrations, art: .grid)]
+        case .integrations:
+            return [Item(id: "back", icon: "chevron.left", on: false, enabled: true, kind: .back)]
+                + integrations.map { Item(id: $0.connectorID, icon: $0.glyph, on: active.contains($0.connectorID), enabled: true, kind: .action(.toggle($0.connector)), art: .logo($0)) }
+                + [Item(id: "manage", icon: integrations.isEmpty ? "plus" : "slider.horizontal.3", on: false, enabled: true, kind: .action(.manageIntegrations))]
         }
     }
 
@@ -75,11 +86,11 @@ struct AttachControl: View {
         .sensoryFeedback(.selection, trigger: active)
         .sensoryFeedback(.selection, trigger: page)
         .accessibilityElement()
-        .accessibilityLabel("Add photos, files or connectors")
+        .accessibilityLabel("Add photos, files, connectors or integrations")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { withAnimation(spring) { open.toggle() } }
         .accessibilityActions {
-            ForEach(items) { item in Button(item.id.capitalized) { choose(item) } }
+            ForEach(items) { item in Button(item.label) { choose(item) } }
         }
     }
 
@@ -114,9 +125,7 @@ struct AttachControl: View {
 
             ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
                 let lit = (highlighted == i || item.on) && open
-                Image(systemName: item.icon)
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundStyle(lit ? Ink.paper : Ink.primary)
+                face(item, lit: lit)
                     .frame(width: min(36, slot - 4), height: min(36, slot - 4))
                     .background(item.on && highlighted != i ? Ink.primary : .clear, in: .circle)
                     .opacity(open ? (item.enabled ? 1 : 0.3) : 0)
@@ -138,6 +147,21 @@ struct AttachControl: View {
                 .offset(x: trayWidth / 2 - size / 2 - 4)
                 .contentShape(.rect)
                 .allowsHitTesting(open)
+        }
+    }
+
+    /// An icon, an app's logo (ringed in ink when picked), or the integrations grid.
+    @ViewBuilder private func face(_ item: Item, lit: Bool) -> some View {
+        switch item.art {
+        case .symbol:
+            Image(systemName: item.icon)
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(lit ? Ink.paper : Ink.primary)
+        case .logo(let integration):
+            IntegrationLogo(integration: integration, size: lit ? min(26, slot - 10) : min(30, slot - 6))
+                .rotationEffect(.degrees(lit ? -6 : 0))
+        case .grid:
+            IntegrationsGlyph(integrations: integrations, lit: lit, size: 17)
         }
     }
 
@@ -181,6 +205,7 @@ struct AttachControl: View {
     private func choose(_ item: Item) {
         switch item.kind {
         case .connectors: withAnimation(spring) { page = .connectors }
+        case .integrations: withAnimation(spring) { page = .integrations }
         case .back: withAnimation(spring) { page = .main }
         case .action(let action):
             act(action) // toggles keep the tray open; everything else closes it

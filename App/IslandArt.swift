@@ -66,6 +66,17 @@ enum IslandArt {
         case .pink: Style(ink: 0x2A2724, polaroid: true)
         case .teal: Style(ink: 0xE6FFFC, glyphInk: 0x5BE0D3, halo: (0x0B2E2C, 3))
         case .indigo: Style(ink: 0xFFFFFF, halo: (0x2F28A8, 3))
+        case .messages: Style(ink: 0xFFFFFF, halo: (0x1C8A35, 2.5), trailing: 14)
+        case .mail: Style(ink: 0xFFFFFF, halo: (0x0F56B8, 2.5), trailing: 10)
+        case .appStore: Style(ink: 0xFFFFFF, halo: (0x1452C2, 2.5))
+        case .chatgpt: Style(ink: 0xF4F4F4, glyphInk: 0x7FE3C4, trailing: 12)
+        case .claude: Style(ink: 0xFFF6EF, halo: (0x9E4524, 2.5), trailing: 14)
+        case .gallery: Style(ink: 0x1A1A1A, glyphInk: 0xFF5E8E, trailing: 14)
+        case .github: Style(ink: 0xF0F6FC, glyphInk: 0x56D364, trailing: 24)
+        case .health: Style(ink: 0x1A1A1A, glyphInk: 0xFF2D55, trailing: 16)
+        case .googleHealth: Style(ink: 0x202124, glyphInk: 0x4285F4, trailing: 18)
+        case .contacts: Style(ink: 0xFFFFFF, halo: (0x5E5E66, 2.5))
+        case .notion: Style(ink: 0x191919, glyphInk: 0x191919, trailing: 10)
         }
     }
 
@@ -176,6 +187,77 @@ enum IslandArt {
         case .pink: paper(r, cg)
         case .teal: circuit(r, cg)
         case .indigo: letters(r, cg)
+        default: brand(tint, r, cg)
+        }
+    }
+
+    /// Integrations: each app's colours with a whisper of what it is along the end.
+    private static func brand(_ tint: IslandTint, _ r: CGRect, _ cg: CGContext) {
+        let w = r.width, h = r.height
+        gradient(tint.stops, r, cg)
+        switch tint {
+        case .messages:
+            // Two speech bubbles trailing off the end.
+            fill(0xFFFFFF, 0.22); UIBezierPath(roundedRect: CGRect(x: w - 30, y: 3, width: 20, height: 11), cornerRadius: 5.5).fill()
+            fill(0xFFFFFF, 0.14); UIBezierPath(roundedRect: CGRect(x: w - 20, y: 13, width: 18, height: 10), cornerRadius: 5).fill()
+        case .mail:
+            // Airmail edging along the bottom.
+            for i in 0..<Int(w / 8) + 1 {
+                fill(i % 2 == 0 ? 0xFFFFFF : 0xFF5A4E, 0.22)
+                let x = CGFloat(i) * 8
+                let p = UIBezierPath(); p.move(to: CGPoint(x: x, y: h)); p.addLine(to: CGPoint(x: x + 4, y: h - 3)); p.addLine(to: CGPoint(x: x + 8, y: h - 3)); p.addLine(to: CGPoint(x: x + 4, y: h)); p.close(); p.fill()
+            }
+        case .appStore:
+            fill(0xFFFFFF, 0.12); UIBezierPath(ovalIn: CGRect(x: w - 26, y: -10, width: 36, height: 36)).fill()
+            fill(0xFFFFFF, 0.08); UIBezierPath(ovalIn: CGRect(x: w * 0.35, y: h * 0.55, width: 40, height: 30)).fill()
+        case .chatgpt:
+            // A faint knot of petals.
+            stroke(0xFFFFFF, 0.13)
+            let c = CGPoint(x: w - 12, y: h / 2)
+            for i in 0..<6 {
+                let a = CGFloat(i) * .pi / 3
+                let petal = UIBezierPath(roundedRect: CGRect(x: -3.5, y: -11, width: 7, height: 13), cornerRadius: 3)
+                petal.apply(CGAffineTransform(rotationAngle: a).concatenating(CGAffineTransform(translationX: c.x, y: c.y)))
+                petal.lineWidth = 1.1; petal.stroke()
+            }
+        case .claude:
+            stroke(0xFFF3EA, 0.22)
+            let c = CGPoint(x: w - 13, y: h / 2), burst = UIBezierPath(); burst.lineWidth = 1.6; burst.lineCapStyle = .round
+            for i in 0..<10 {
+                let a = CGFloat(i) * .pi / 5 + 0.2, l: CGFloat = i % 2 == 0 ? 11 : 7.5
+                burst.move(to: CGPoint(x: c.x + cos(a) * 2, y: c.y + sin(a) * 2)); burst.addLine(to: CGPoint(x: c.x + cos(a) * l, y: c.y + sin(a) * l))
+            }
+            burst.stroke()
+        case .gallery:
+            let c = CGPoint(x: w - 12, y: h / 2)
+            for (i, color) in [UInt32(0xFDB827), 0xF68B1F, 0xEF4136, 0xD6246E, 0x9B4F96, 0x3F51B5, 0x1EA1DC, 0x7BC043].enumerated() {
+                let petal = UIBezierPath(roundedRect: CGRect(x: -2.6, y: -9, width: 5.2, height: 8), cornerRadius: 2.6)
+                petal.apply(CGAffineTransform(rotationAngle: CGFloat(i) * .pi / 4).concatenating(CGAffineTransform(translationX: c.x, y: c.y)))
+                fill(color, 0.32); petal.fill()
+            }
+        case .github:
+            // A strip of the contribution graph.
+            let greens: [UInt32] = [0x0E4429, 0x006D32, 0x26A641, 0x39D353, 0x161B22]
+            for col in 0..<4 { for row in 0..<3 {
+                fill(greens[(col * 7 + row * 3) % greens.count], 0.9)
+                UIBezierPath(roundedRect: CGRect(x: w - 24 + CGFloat(col) * 5.5, y: 4.5 + CGFloat(row) * 5.8, width: 4.4, height: 4.4), cornerRadius: 1).fill()
+            } }
+        case .health, .googleHealth:
+            // A heartbeat across the end.
+            let line = UIBezierPath(); line.lineWidth = 1.2; line.lineJoinStyle = .round
+            let y = h * 0.55, x0 = w - 34
+            line.move(to: CGPoint(x: x0, y: y)); line.addLine(to: CGPoint(x: x0 + 10, y: y)); line.addLine(to: CGPoint(x: x0 + 14, y: y - 8))
+            line.addLine(to: CGPoint(x: x0 + 18, y: y + 6)); line.addLine(to: CGPoint(x: x0 + 21, y: y)); line.addLine(to: CGPoint(x: w, y: y))
+            if tint == .health { stroke(0xFF2D55, 0.3); line.stroke() } else {
+                for (i, color) in [UInt32(0x4285F4), 0xEA4335, 0xFBBC05, 0x34A853].enumerated() {
+                    fill(color, 0.85); UIBezierPath(ovalIn: CGRect(x: w - 30 + CGFloat(i) * 6, y: h / 2 - 2, width: 4, height: 4)).fill()
+                }
+            }
+        case .notion:
+            stroke(0x191919, 0.08); let rules = UIBezierPath(); rules.lineWidth = 0.7
+            for y in [h * 0.3, h * 0.55, h * 0.8] { rules.move(to: CGPoint(x: w - 22, y: y)); rules.addLine(to: CGPoint(x: w - 5, y: y)) }
+            rules.stroke()
+        default: break
         }
     }
 

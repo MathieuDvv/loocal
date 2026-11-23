@@ -30,6 +30,28 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>github</string>
+		<string>chatgpt</string>
+		<string>claude</string>
+		<string>notion</string>
+		<string>sms</string>
+		<string>message</string>
+		<string>mailto</string>
+		<string>itms-apps</string>
+		<string>photos-redirect</string>
+		<string>x-apple-health</string>
+		<string>fitbit</string>
+		<string>googlefit</string>
+		<string>googlehealth</string>
+	</array>
+	<key>NSContactsUsageDescription</key>
+	<string>Loocal looks up the people you name, to answer about them and to address the texts and emails it drafts. Nothing leaves your iPhone.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>With Health connected, Loocal reads your steps, sleep, heart rate and workouts to answer questions about them. It's read on your iPhone and never sent anywhere.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>With Gallery connected, Loocal reads when and what kind of photos you took to answer questions about them. Pictures never leave your iPhone.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCalendarsFullAccessUsageDescription</key>

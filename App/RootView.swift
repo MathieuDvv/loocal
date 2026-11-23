@@ -58,7 +58,8 @@ struct RootView: View {
         ZStack {
             switch tab {
             case .history: HistoryView(store: store, open: { store.select($0); go(.chat) }).transition(slide)
-            case .chat: ChatView(store: store, openSettings: { go(.settings) }, openPersonas: { addingPersona = true; go(.settings) }).transition(slide)
+            case .chat: ChatView(store: store, openSettings: { go(.settings) }, openPersonas: { addingPersona = true; go(.settings) },
+                                 openIntegrations: { settingsPath = [.integrations]; go(.settings) }).transition(slide)
             case .settings: SettingsView(store: store, appearance: $appearance, addingPersona: $addingPersona, path: $settingsPath).transition(slide)
             case .results: ErrandResultsView(store: store, continueInChat: continueInChat, openErrand: { go(.errand) }).transition(slide)
             case .errand: ErrandView(store: store, openResults: { go(.results) }, openRoutines: { go(.routines) }, continueInChat: continueInChat, openPersonas: { addingPersona = true; go(.settings) }).transition(slide)
@@ -442,6 +443,7 @@ struct ChatView: View {
     @Bindable var store: AppState
     let openSettings: () -> Void
     var openPersonas: () -> Void = {}
+    var openIntegrations: () -> Void = {}
     @State private var photo: PhotosPickerItem?
     @State private var isPreparingPhoto = false
     @State private var composerFocused = false
@@ -454,9 +456,8 @@ struct ChatView: View {
     @State private var filesOpen = false
     @State private var cameraOpen = false
     @State private var personaOpen = false
-    @State private var serverPrompt = false
-    @State private var serverName = ""
-    @State private var serverToken = ""
+    /// An integration opened from the proposal above the prompt.
+    @State private var connecting: Integration?
     @State private var selecting: ChatMessage?
     /// The message held for its actions; the rest of the chat stays as it is.
     @State private var held: UUID?
@@ -487,6 +488,14 @@ struct ChatView: View {
             // The chat runs on under the prompt bar, fading into the paper toward the nav.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
+                    if let integration = store.integrations.suggestion, showsIntegrationSuggestion {
+                        IntegrationSuggestion(integration: integration, connect: { connecting = integration }, dismiss: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { store.integrations.dismissSuggestion() }
+                        })
+                        .id(integration.id)
+                        .onAppear { store.integrations.suggestionShown() }
+                        .transition(.asymmetric(insertion: .move(edge: .bottom).combined(with: .opacity), removal: .scale(scale: 0.92).combined(with: .opacity)))
+                    }
                     if store.current.messages.isEmpty && store.composerReady && store.draft.isEmpty && !hasAttachments && !store.isPainting {
                         suggestions.transition(.move(edge: .bottom).combined(with: .opacity))
                     }
@@ -502,6 +511,7 @@ struct ChatView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.85), value: store.draft.isEmpty)
+        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: store.integrations.suggestion?.id)
         .animation(.spring(response: 0.45, dampingFraction: 0.72), value: store.attachedFiles)
         .animation(.spring(response: 0.45, dampingFraction: 0.72), value: store.attachmentName)
         .animation(.spring(response: 0.45, dampingFraction: 0.72), value: isPreparingPhoto)
@@ -552,17 +562,16 @@ struct ChatView: View {
         .sheet(item: $selecting) { message in
             SelectTextSheet(text: MessageView.rendered(message.role == .user ? message.readable : message.text))
         }
-        .alert("Add MCP server", isPresented: $serverPrompt) {
-            TextField("https://server.example/mcp", text: $serverName)
-                .textInputAutocapitalization(.never).keyboardType(.URL)
-            SecureField("Token (optional)", text: $serverToken)
-            Button("Connect") {
-                let address = serverName, token = serverToken
-                serverName = ""; serverToken = ""
-                Task { await store.addMCPServer(address, token: token) }
-            }
-            Button("Cancel", role: .cancel) { serverName = ""; serverToken = "" }
-        } message: { Text("Loocal connects over HTTPS and lets the model call this server’s tools. Its token stays in the Keychain.") }
+        .sheet(item: $connecting) { integration in
+            IntegrationSheet(store: store, integration: integration)
+                .presentationDetents([integration.key == .none ? .fraction(0.68) : .large])
+                .presentationCornerRadius(34)
+        }
+        // Now and then, an app on this iPhone is proposed as an integration.
+        .onAppear { store.integrations.scan(demo: RootDemo.on); store.integrations.considerSuggesting() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            store.integrations.scan(demo: RootDemo.on); store.integrations.considerSuggesting()
+        }
     }
 
     /// The model selector, with the chat fading out under it as it scrolls up.
@@ -597,6 +606,11 @@ struct ChatView: View {
         #else
         return false
         #endif
+    }
+
+    /// The integration proposal waits for a fresh, empty chat with nothing else going on.
+    private var showsIntegrationSuggestion: Bool {
+        store.current.messages.isEmpty && store.composerReady && store.draft.isEmpty && !hasAttachments && !store.isPainting && !attachOpen
     }
 
     /// Attachments float above the prompt box; their islands in the text point at them.
@@ -690,7 +704,7 @@ struct ChatView: View {
             case .camera:
                 if UIImagePickerController.isSourceTypeAvailable(.camera) { cameraOpen = true }
                 else { store.error = "This device has no camera available." }
-            case .addServer: serverPrompt = true
+            case .manageIntegrations: openIntegrations()
             case .toggle: break
             }
         }
@@ -860,7 +874,8 @@ struct ChatView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .bottom, spacing: 6) {
                 HStack(spacing: 0) {
-                    AttachControl(open: $attachOpen, connectors: store.connectors, active: [], vision: store.model.vision, act: handle)
+                    AttachControl(open: $attachOpen, connectors: store.connectors.filter { Integration.with(connectorID: $0.id) == nil },
+                                  integrations: store.integrations.connected, active: [], vision: store.model.vision, act: handle)
                         .disabled(store.isBusy || isPreparingPhoto || store.isPainting)
                         .opacity(store.isPainting ? 0.35 : 1)
                         .zIndex(1) // the tray unrolls over its neighbours

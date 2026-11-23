@@ -47,6 +47,8 @@ struct Island: Identifiable, Codable, Hashable, Sendable {
 /// petals), drawn top to bottom like an icon, with no outline.
 enum IslandTint: String, Codable, Sendable, CaseIterable {
     case green, blue, red, orange, purple, teal, amber, pink, indigo, slate
+    // Integrations, each in its app's colours.
+    case messages, mail, appStore, chatgpt, claude, gallery, github, health, googleHealth, contacts, notion
 
     /// Gradient stops, top to bottom.
     var stops: [UInt32] {
@@ -61,6 +63,17 @@ enum IslandTint: String, Codable, Sendable, CaseIterable {
         case .pink: [0xFFB86B, 0xFF5E8E, 0xA86DFF] // Photos petals
         case .indigo: [0x938CFF, 0x4F46E5]       // Translate
         case .slate: [0xF7F7F7, 0xDCDCDC]        // Wikipedia, paper-white
+        case .messages: [0x6EEA7E, 0x2DBE4B]
+        case .mail: [0x6CC6FF, 0x1C7CF2]
+        case .appStore: [0x4CC4FF, 0x1F6CF0]
+        case .chatgpt: [0x3A3A3A, 0x0E0E0E]
+        case .claude: [0xE69476, 0xC8613C]
+        case .gallery: [0xFFFFFF, 0xF2F0F3]
+        case .github: [0x3A424B, 0x161B22]
+        case .health: [0xFFFFFF, 0xF4F1F2]
+        case .googleHealth: [0xFFFFFF, 0xF1F3F4]
+        case .contacts: [0xCFCFD4, 0x8E8E95]
+        case .notion: [0xFFFFFF, 0xEFEEEA]
         }
     }
 
@@ -68,7 +81,7 @@ enum IslandTint: String, Codable, Sendable, CaseIterable {
     var inkRGB: UInt32 {
         switch self {
         case .amber: 0x4A3700
-        case .slate: 0x111111
+        case .slate, .gallery, .health, .googleHealth, .notion: 0x111111
         default: 0xFFFFFF
         }
     }
@@ -89,7 +102,7 @@ enum IslandTint: String, Codable, Sendable, CaseIterable {
         case Connector.reminders.id: .orange
         case Connector.clipboard.id: .purple
         case Connector.wikipedia.id: .slate
-        default: .teal
+        default: Integration.with(connectorID: id)?.tint ?? .teal
         }
     }
 }
@@ -110,7 +123,7 @@ extension Connector {
         case Connector.reminders.id: "checklist"
         case Connector.clipboard.id: "doc.on.clipboard.fill"
         case Connector.wikipedia.id: "globe"
-        default: "server.rack"
+        default: Integration.with(connectorID: id)?.glyph ?? "server.rack"
         }
     }
 }
