@@ -1003,7 +1003,7 @@ struct MessageView: View {
 
     @ViewBuilder private var assistant: some View {
         if let paint = message.paint {
-            PaintCanvasView(info: paint, status: message.status, step: paintStep, image: photo, fresh: fresh)
+            PaintCanvasView(id: message.id, info: paint, status: message.status, step: paintStep, image: photo, fresh: fresh)
         } else {
             reply
         }

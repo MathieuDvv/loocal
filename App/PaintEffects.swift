@@ -3,59 +3,43 @@ import UIKit
 
 // MARK: - Entering paint mode
 
-/// Colour bleeding out of the model selector across the app, like ink dropped in water,
-/// when a picture model is picked; it drains back into the pill when you leave. Never stays.
+/// A fluid-acrylic pour: marbled paint (blues, lime, cream, coral, ink, copper veins, white
+/// cells) spills out of the model selector, runs down the whole screen with a dripping front,
+/// keeps flowing for a moment, then drains away from the top. Leaving paint mode, a short
+/// splash runs out of the pill and is drawn back in. Drawn by `acrylicPour` (Pour.metal).
 struct PaintInfusion: View {
     let entering: Bool
     /// Where the paint comes from (and goes back to): the selector, near the top.
     var origin = UnitPoint(x: 0.5, y: 0.095)
     @State private var start = Date.now
-    @Environment(\.colorScheme) private var scheme
 
-    static func duration(entering: Bool) -> Double { entering ? 1.9 : 0.7 }
-    private var duration: Double { Self.duration(entering: entering) }
+    static func duration(entering: Bool) -> Double { entering ? 3.0 : 0.8 }
 
-    /// One drop of colour: its direction, reach and size.
-    private struct Drop { let color: Color; let angle: Double; let reach: CGFloat; let size: CGFloat; let delay: Double }
-    private static let drops: [Drop] = {
-        let c = LiquidPaint.colors
-        return [
-            Drop(color: c[0], angle: 115, reach: 0.55, size: 0.62, delay: 0),
-            Drop(color: c[1], angle: 70, reach: 0.42, size: 0.5, delay: 0.05),
-            Drop(color: c[2], angle: 95, reach: 0.85, size: 0.7, delay: 0.12),
-            Drop(color: c[3], angle: 40, reach: 0.7, size: 0.48, delay: 0.18),
-            Drop(color: c[4], angle: 145, reach: 0.75, size: 0.45, delay: 0.22),
-            Drop(color: c[0], angle: 20, reach: 0.95, size: 0.4, delay: 0.3),
-            Drop(color: c[2], angle: 160, reach: 1.0, size: 0.42, delay: 0.34),
-        ]
-    }()
+    /// How far the pour has run down, and how far it has drained, `elapsed` seconds in.
+    private func phases(_ elapsed: Double) -> (fill: Double, drain: Double) {
+        func ease(_ t: Double) -> Double { let t = min(max(t, 0), 1); return t * t * (3 - 2 * t) }
+        if entering {
+            // Starts as a trickle and speeds up as it falls, fills by 1.3 s, flows, then
+            // drains from 1.8 s.
+            let fill = pow(min(max(elapsed / 1.3, 0), 1), 1.7)
+            return (fill, ease((elapsed - 1.8) / 1.1))
+        }
+        // A splash out of the pill, then drawn back up into it.
+        let t = elapsed / Self.duration(entering: false)
+        return (0.32 * sin(min(max(t, 0), 1) * .pi), 0)
+    }
 
     var body: some View {
-        TimelineView(.animation) { context in
-            let elapsed = context.date.timeIntervalSince(start)
-            Canvas { canvas, size in
-                let height = max(size.height, 1)
-                let origin = CGPoint(x: origin.x * size.width, y: origin.y * size.height)
-                // Overall strength: swells in fast, lingers, then fades away entirely.
-                let p = min(max(elapsed / duration, 0), 1)
-                let envelope = entering ? (p < 0.18 ? p / 0.18 : 1 - pow((p - 0.18) / 0.82, 1.6)) : (1 - p) * 0.8
-                guard envelope > 0.001 else { return }
-                canvas.addFilter(.blur(radius: 38))
-                for (i, drop) in Self.drops.enumerated() {
-                    let local = min(max((elapsed - drop.delay * (entering ? 1 : 0.3)) / (duration * 0.8), 0), 1)
-                    // Out from the pill, easing like ink spreading; or back in when leaving.
-                    let spread = entering ? 1 - pow(1 - local, 3) : 1 - local
-                    let angle = (drop.angle + sin(elapsed * 1.7 + Double(i)) * 8) * .pi / 180
-                    let distance = drop.reach * height * spread
-                    let center = CGPoint(x: origin.x + cos(angle) * distance, y: origin.y + sin(angle) * distance)
-                    let radius = max(6, drop.size * height * 0.55 * (0.2 + 0.8 * spread))
-                    let rect = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
-                    canvas.opacity = envelope * (scheme == .dark ? 0.6 : 0.42)
-                    canvas.fill(Path(ellipseIn: rect), with: .radialGradient(Gradient(colors: [drop.color, drop.color.opacity(0)]), center: center, startRadius: 0, endRadius: radius))
-                }
+        GeometryReader { proxy in
+            TimelineView(.animation) { context in
+                let elapsed = context.date.timeIntervalSince(start)
+                let (fill, drain) = phases(elapsed)
+                Rectangle()
+                    .fill(.white)
+                    .colorEffect(ShaderLibrary.acrylicPour(
+                        .float2(proxy.size), .float(elapsed + 3), .float(fill), .float(drain),
+                        .float2(CGPoint(x: origin.x * proxy.size.width, y: origin.y * proxy.size.height))))
             }
-            // Light on a dark page; ink soaking into paper on a light one.
-            .blendMode(scheme == .dark ? .plusLighter : .multiply)
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
@@ -63,12 +47,28 @@ struct PaintInfusion: View {
     }
 }
 
+/// A small, repeatable random sequence, so a pour (or a canvas) looks the same every time.
+struct SplitMix {
+    private var state: UInt64
+    init(seed: UInt64) { state = seed }
+    mutating func next() -> UInt64 {
+        state &+= 0x9E3779B97F4A7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9
+        z = (z ^ (z >> 27)) &* 0x94D049BB133111EB
+        return z ^ (z >> 31)
+    }
+    /// 0…1
+    mutating func unit() -> CGFloat { CGFloat(next() >> 11) / CGFloat(UInt64(1) << 53) }
+}
+
 // MARK: - Painting a picture
 
-/// The reply while a picture is painted: a dark canvas covered in faint brush dabs, where wet
-/// colour wanders and blooms as the model works; then the picture is brushed in, stroke by
-/// stroke. Afterwards, just the picture.
+/// The reply while a picture is painted: a grey rounded square slowly covered in textured
+/// brush strokes laid at random, overlapping, with the percentage in the corner. The finished
+/// picture is then brushed in over them. Afterwards, just the picture.
 struct PaintCanvasView: View {
+    let id: UUID
     let info: PaintInfo
     let status: ChatMessage.Status
     let step: PaintStep?
@@ -77,135 +77,147 @@ struct PaintCanvasView: View {
     let fresh: Bool
 
     @State private var revealStart: Date?
+    @State private var stepAt = Date.now
+    @State private var smoother = Smoother()
     private let side: CGFloat = 288
 
+    /// Glides the shown progress towards its target, so a step finishing never jumps it.
+    /// A reference type, updated while drawing without invalidating the view.
+    final class Smoother {
+        private var value = 0.0
+        private var last: Date?
+        func follow(_ target: Double, at now: Date) -> Double {
+            let dt = last.map { now.timeIntervalSince($0) } ?? 0
+            last = now
+            value += (target - value) * (1 - exp(-dt / 0.9))
+            return value
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ZStack {
-                if image == nil || revealStart != nil {
-                    WetCanvas(progress: step?.fraction ?? 0, stopped: status == .interrupted)
-                        .transition(.opacity)
+        ZStack {
+            if image == nil || revealStart != nil {
+                TimelineView(.animation(minimumInterval: 1 / 30, paused: status != .generating)) { context in
+                    let shown = image != nil ? 1 : smoother.follow(progress(at: context.date), at: context.date)
+                    BrushCover(seed: id, coverage: shown)
+                        .overlay(alignment: .topTrailing) {
+                            if image == nil {
+                                Text(status == .interrupted ? "Stopped" : "\(Int(shown * 100))%")
+                                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                    .foregroundStyle(Ink.primary)
+                                    .padding(.horizontal, 8).padding(.vertical, 4)
+                                    .background(.regularMaterial, in: .capsule)
+                                    .padding(10)
+                            }
+                        }
                 }
-                if let image {
-                    if let revealStart {
-                        BrushReveal(image: image, start: revealStart)
-                    } else {
-                        Image(uiImage: image).resizable().scaledToFill()
-                    }
+                .transition(.opacity)
+            }
+            if let image {
+                if let revealStart {
+                    BrushReveal(image: image, start: revealStart)
+                } else {
+                    Image(uiImage: image).resizable().scaledToFill()
                 }
             }
-            .frame(width: side, height: side)
-            .clipShape(.rect(cornerRadius: 22))
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Ink.hairline))
-            .overlay(alignment: .topTrailing) {
-                if image == nil {
-                    Text("\(info.width) × \(info.height)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.75))
-                        .padding(.horizontal, 7).padding(.vertical, 4)
-                        .background(.black.opacity(0.35), in: .capsule)
-                        .padding(10)
-                }
+        }
+        .frame(width: side, height: side)
+        .clipShape(.rect(cornerRadius: 22))
+        .contextMenu {
+            if let image {
+                ShareLink(item: SwiftUI.Image(uiImage: image), preview: SharePreview(info.prompt, image: SwiftUI.Image(uiImage: image)))
+                Button("Copy", systemImage: "doc.on.doc") { UIPasteboard.general.image = image }
             }
-            .contextMenu {
-                if let image {
-                    ShareLink(item: SwiftUI.Image(uiImage: image), preview: SharePreview(info.prompt, image: SwiftUI.Image(uiImage: image)))
-                    Button("Copy", systemImage: "doc.on.doc") { UIPasteboard.general.image = image }
-                }
-            }
-            caption
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { if fresh, image != nil { revealStart = .now } }
         .onChange(of: image != nil) { _, has in if has && fresh { revealStart = .now } }
+        .onChange(of: step?.done) { _, _ in stepAt = .now }
         .task(id: revealStart) {
             guard revealStart != nil else { return }
             try? await Task.sleep(for: .seconds(BrushReveal.duration + 0.1))
             withAnimation(.smooth) { revealStart = nil }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(image == nil ? "Painting: \(info.prompt)" : "Picture: \(info.prompt)")
     }
 
-    @ViewBuilder private var caption: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            if image == nil {
-                HStack(spacing: 6) {
-                    Text(status == .interrupted ? "Stopped" : "Painting")
-                        .font(.geist(14, .medium)).foregroundStyle(Ink.primary)
-                        .shimmer()
-                    if let step, step.total > 0, status == .generating {
-                        Text("step \(min(step.done + 1, step.total)) of \(step.total)")
-                            .font(.geist(13).monospacedDigit()).foregroundStyle(Ink.tertiary)
-                            .contentTransition(.numericText())
-                    }
-                }
-            }
-            Text("“\(info.prompt)”")
-                .font(.geist(13)).foregroundStyle(Ink.secondary).lineLimit(2)
-                .frame(maxWidth: side, alignment: .leading)
+    /// Smooth progress between the model's few, coarse steps: what's done, plus most of the
+    /// step under way, approached gradually. Holds below 100% until the picture is there.
+    private func progress(at now: Date) -> Double {
+        let since = now.timeIntervalSince(stepAt)
+        guard let step, step.total > 0 else {
+            // Loading the model, before the first step: creep towards a tenth.
+            return 0.1 * (1 - exp(-since / 4))
         }
-        .padding(.leading, 2)
-        .animation(.smooth, value: step)
+        let share = 0.85 / Double(step.total)
+        let base = 0.1 + share * Double(step.done)
+        return min(base + share * 0.9 * (1 - exp(-since / 2.5)), 0.99)
     }
 }
 
-/// Faint brush dabs on a dark ground. Wet colour wanders over them, morphing as it goes:
-/// dabs under it swell, lengthen, turn with the flow and take its colour. The more the
-/// picture has come along, the wider the wet patch.
-private struct WetCanvas: View {
-    let progress: Double
-    let stopped: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+/// Brush strokes laid down one by one on a grey ground, at random places and angles,
+/// overlapping, until they cover it. Each has bristle texture: streaks of slightly different
+/// tone and length, dry and broken at the ends.
+private struct BrushCover: View {
+    let seed: UUID
+    /// 0…1: how many of the strokes are down.
+    let coverage: Double
+    @Environment(\.colorScheme) private var scheme
+
+    private struct Bristle { let offset: CGFloat; let width: CGFloat; let alpha: Double; let from: CGFloat; let to: CGFloat }
+    private struct Stroke { let start: CGPoint; let end: CGPoint; let bend: CGFloat; let width: CGFloat; let tone: Double; let bristles: [Bristle] }
+
+    static let count = 70
+
+    private static func strokes(_ seed: UUID) -> [Stroke] {
+        // The same strokes for the same picture, every time it's drawn.
+        var rng = SplitMix(seed: seed.uuidString.utf8.reduce(UInt64(1469598103934665603)) { ($0 ^ UInt64($1)) &* 1099511628211 })
+        return (0..<count).map { _ in
+            let center = CGPoint(x: rng.unit(), y: rng.unit())
+            let angle = rng.unit() * .pi
+            let length = 0.3 + rng.unit() * 0.45
+            let d = CGPoint(x: cos(angle) * length / 2, y: sin(angle) * length / 2)
+            let bristles = (0..<9).map { _ in
+                Bristle(offset: rng.unit() - 0.5, width: 0.06 + rng.unit() * 0.12, alpha: 0.35 + Double(rng.unit()) * 0.65,
+                        from: rng.unit() * 0.12, to: 0.86 + rng.unit() * 0.14)
+            }
+            return Stroke(start: CGPoint(x: center.x - d.x, y: center.y - d.y), end: CGPoint(x: center.x + d.x, y: center.y + d.y),
+                          bend: (rng.unit() - 0.5) * 0.15, width: 0.08 + rng.unit() * 0.08, tone: Double(rng.unit()), bristles: bristles)
+        }
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 40, paused: stopped || reduceMotion)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            Canvas { canvas, size in
-                canvas.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: 0.075)))
-                let w = size.width, h = size.height
-                // Two wet patches drifting on slow, unrelated loops.
-                let centers = [
-                    CGPoint(x: w * (0.5 + 0.3 * sin(t * 0.53)), y: h * (0.5 + 0.28 * sin(t * 0.71 + 1))),
-                    CGPoint(x: w * (0.5 + 0.32 * cos(t * 0.41 + 2)), y: h * (0.5 + 0.3 * sin(t * 0.37 + 4))),
-                ]
-                let reach = w * (0.17 + 0.16 * progress)
-                let radii = [reach * (1 + 0.25 * sin(t * 1.3)), reach * 0.8 * (1 + 0.3 * cos(t * 1.1 + 1))]
-                let colors = LiquidPaint.colors
-                // A soft coloured bloom under the dabs.
-                var glow = canvas
-                glow.addFilter(.blur(radius: 26))
-                for (i, c) in centers.enumerated() {
-                    let r = radii[i] * 1.5
-                    glow.opacity = stopped ? 0.12 : 0.35
-                    glow.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
-                              with: .color(colors[(i * 2 + Int(t / 3)) % colors.count]))
-                }
-                let spacing: CGFloat = 14
-                let cols = Int(w / spacing), rows = Int(h / spacing)
-                let inset = CGPoint(x: (w - CGFloat(cols - 1) * spacing) / 2, y: (h - CGFloat(rows - 1) * spacing) / 2)
-                for row in 0..<rows {
-                    for col in 0..<cols {
-                        let p = CGPoint(x: inset.x + CGFloat(col) * spacing, y: inset.y + CGFloat(row) * spacing)
-                        // Wetness here: the nearer a patch, the more.
-                        var wet: CGFloat = 0
-                        var hue = 0
-                        for (i, c) in centers.enumerated() {
-                            let d = hypot(p.x - c.x, p.y - c.y) / radii[i]
-                            let v = exp(-d * d * 1.6)
-                            if v > wet { wet = v; hue = i }
-                        }
-                        if stopped { wet *= 0.3 }
-                        let seed = Double((row * 73 + col * 151) % 97) / 97
-                        let angle = Angle.degrees(-38 + (seed - 0.5) * 50 + Double(wet) * 25 * sin(t * 1.4 + seed * 6))
-                        let length = 4.5 + 9 * wet
-                        let thickness = 2 + 1.6 * wet
-                        var dab = Path(roundedRect: CGRect(x: -length / 2, y: -thickness / 2, width: length, height: thickness), cornerRadius: thickness / 2)
-                        dab = dab.applying(CGAffineTransform(rotationAngle: angle.radians)).applying(CGAffineTransform(translationX: p.x, y: p.y))
-                        let tint = colors[(hue * 2 + Int(seed * 3) + Int(t / 3)) % colors.count]
-                        canvas.opacity = 0.1 + 0.85 * wet
-                        canvas.fill(dab, with: .color(wet > 0.25 ? tint : .white))
-                    }
+        let strokes = Self.strokes(seed)
+        let dark = scheme == .dark
+        Canvas { canvas, size in
+            canvas.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: dark ? 0.17 : 0.9)))
+            let down = coverage * Double(Self.count)
+            for (i, stroke) in strokes.enumerated() where Double(i) < down {
+                // The newest stroke is still going on: it grows along its length.
+                let drawn = min(1, CGFloat(down - Double(i)))
+                let a = CGPoint(x: stroke.start.x * size.width, y: stroke.start.y * size.height)
+                let b = CGPoint(x: stroke.end.x * size.width, y: stroke.end.y * size.height)
+                let length = max(hypot(b.x - a.x, b.y - a.y), 1)
+                let normal = CGVector(dx: -(b.y - a.y) / length, dy: (b.x - a.x) / length)
+                let control = CGPoint(x: (a.x + b.x) / 2 + normal.dx * stroke.bend * size.width, y: (a.y + b.y) / 2 + normal.dy * stroke.bend * size.width)
+                let width = stroke.width * size.width
+                // Greys a little darker or lighter than the ground, so overlaps read as layers.
+                let tone = dark ? 0.22 + stroke.tone * 0.24 : 0.6 + stroke.tone * 0.28
+                var body = Path()
+                body.move(to: a)
+                body.addQuadCurve(to: b, control: control)
+                canvas.stroke(body.trimmedPath(from: 0.04, to: 0.04 + 0.92 * drawn), with: .color(Color(white: tone).opacity(0.55)),
+                              style: StrokeStyle(lineWidth: width * 0.8, lineCap: .round))
+                for bristle in stroke.bristles {
+                    let shift = bristle.offset * width
+                    var path = Path()
+                    path.move(to: CGPoint(x: a.x + normal.dx * shift, y: a.y + normal.dy * shift))
+                    path.addQuadCurve(to: CGPoint(x: b.x + normal.dx * shift, y: b.y + normal.dy * shift),
+                                      control: CGPoint(x: control.x + normal.dx * shift, y: control.y + normal.dy * shift))
+                    canvas.stroke(path.trimmedPath(from: bristle.from, to: bristle.from + (bristle.to - bristle.from) * drawn),
+                                  with: .color(Color(white: tone + (bristle.alpha - 0.6) * 0.14).opacity(bristle.alpha)),
+                                  style: StrokeStyle(lineWidth: bristle.width * width, lineCap: .round))
                 }
             }
         }

@@ -64,6 +64,7 @@
 		E111E174E3575366B91AC573 /* Handwriting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87AFFA346D470E5B565BB57B /* Handwriting.swift */; };
 		E3CF42700E953FABA1720F4D /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B4F4D0D4352D22486C7B11 /* Tools.swift */; };
 		E3DB9083F86BCA7B5269DCCF /* OFL-Geist.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1C682F60E47498036B1A13FC /* OFL-Geist.txt */; };
+		E7C7AE3EB2DAF9BF647DD37A /* Pour.metal in Sources */ = {isa = PBXBuildFile; fileRef = EB042C1619371F9844D7DFD5 /* Pour.metal */; };
 		E841922283914197F034174D /* LoopGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A9EEF6FCAADF270EC96FA3 /* LoopGeometry.swift */; };
 		EAECCCE973B4021F9965812E /* Speech.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836B53F972A12FC25F957205 /* Speech.swift */; };
 		EBB7A97CD3C427C3E3585DDB /* ActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35120B9AF11145D8D365941E /* ActivityController.swift */; };
@@ -184,6 +185,7 @@
 		DAD14ACE55E6145BA4B6257E /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
 		E9A969E82232E928B403CFA0 /* StableDiffusion */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StableDiffusion; path = Vendor/StableDiffusion; sourceTree = SOURCE_ROOT; };
 		E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
+		EB042C1619371F9844D7DFD5 /* Pour.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Pour.metal; sourceTree = "<group>"; };
 		F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IslandAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FC33BEAB959FE713B7B0F478 /* ModelLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelLibrary.swift; sourceTree = "<group>"; };
@@ -243,6 +245,7 @@
 				39249B8F90D2351AB47E609D /* Painter.swift */,
 				1ECEF0BEEC272B8C21C77102 /* Pebble.swift */,
 				3EE112B746F79F170DD202A0 /* Persona.swift */,
+				EB042C1619371F9844D7DFD5 /* Pour.metal */,
 				75DA7D97720043E121C40794 /* RootView.swift */,
 				CC607114706BCC39FA6FEE51 /* SendControl.swift */,
 				2CF22D9037BE70F82E748D64 /* SettingsView.swift */,
@@ -575,6 +578,7 @@
 				03D075D2C1A9764BD604BD26 /* Pebble.swift in Sources */,
 				0C8E79533853BFC13D0F5FD6 /* PebbleShape.swift in Sources */,
 				D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */,
+				E7C7AE3EB2DAF9BF647DD37A /* Pour.metal in Sources */,
 				B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */,
 				FA44867967FC588386898FFB /* SendControl.swift in Sources */,
 				66CE71A971E822C2D21AEB47 /* SettingsView.swift in Sources */,

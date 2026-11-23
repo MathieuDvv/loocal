@@ -203,7 +203,7 @@ struct ModelSelector: View {
     }
 }
 
-/// Wet, flowing paint in a capsule whose edge ripples slightly, as if it was just brushed on.
+/// Wet, flowing paint in a soft blob of a capsule, as if it was just poured on.
 struct LiquidPaint: View {
     static let colors: [Color] = [
         Color(red: 1.0, green: 0.24, blue: 0.5),   // rose
@@ -212,6 +212,8 @@ struct LiquidPaint: View {
         Color(red: 0.2, green: 0.78, blue: 1.0),   // sky
         Color(red: 1.0, green: 0.82, blue: 0.25),  // yolk
     ]
+    /// The same colours as components, for blending between them smoothly.
+    private static let rgb: [SIMD3<Double>] = [[1.0, 0.24, 0.5], [1.0, 0.55, 0.2], [0.55, 0.36, 1.0], [0.2, 0.78, 1.0], [1.0, 0.82, 0.25]]
     static let gradient = LinearGradient(colors: [colors[0], colors[1], colors[2]], startPoint: .topLeading, endPoint: .bottomTrailing)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -239,27 +241,35 @@ struct LiquidPaint: View {
         ]
     }
 
+    /// Each mesh point glides round the palette at its own pace, blending continuously from
+    /// one colour into the next: the loop never jumps.
     private static func mesh(_ t: Double) -> [Color] {
-        // The colours drift round the mesh slowly, so the paint never sits still.
-        let shift = Int(t / 2.4)
-        let c = colors
-        let base = [c[0], c[1], c[2], c[3], c[0], c[4], c[2], c[3], c[1]]
-        return base.indices.map { base[($0 + shift) % base.count] }
+        (0..<9).map { i in
+            let speed = 0.11 + Double(i % 4) * 0.025
+            let position = (Double(i) * 0.37 + t * speed).truncatingRemainder(dividingBy: 1) * Double(rgb.count)
+            let a = rgb[Int(position) % rgb.count], b = rgb[(Int(position) + 1) % rgb.count]
+            let f = position - position.rounded(.down)
+            let eased = f * f * (3 - 2 * f)
+            let c = a + (b - a) * eased
+            return Color(red: c.x, green: c.y, blue: c.z)
+        }
     }
 }
 
-/// A capsule whose outline ripples a point or so in and out, travelling along the edge.
+/// A capsule whose outline swells and sinks in a few slow, soft lobes travelling round it:
+/// a drop of paint holding its shape, not a ragged edge.
 struct WetEdge: Shape {
     var phase: Double
 
     func path(in rect: CGRect) -> Path {
         let r = rect.height / 2
-        let samples = 120
+        let samples = 160
         var path = Path()
         let straight = max(rect.width - 2 * r, 0)
         let perimeter = 2 * straight + 2 * .pi * r
-        for i in 0...samples {
+        for i in 0..<samples {
             let s = CGFloat(i) / CGFloat(samples) * perimeter
+            let u = Double(s / perimeter) * 2 * .pi
             var point: CGPoint
             var normal: CGVector
             if s < straight { // top edge, left to right
@@ -273,9 +283,10 @@ struct WetEdge: Shape {
                 let a = CGFloat.pi / 2 + (s - 2 * straight - .pi * r) / r
                 point = CGPoint(x: rect.minX + r + cos(a) * r, y: rect.midY + sin(a) * r); normal = CGVector(dx: cos(a), dy: sin(a))
             }
-            let ripple = 1.1 * sin(s / 9 + phase * 2.2) + 0.6 * sin(s / 4.3 - phase * 3.1) - 1.2
-            point.x += normal.dx * ripple
-            point.y += normal.dy * ripple
+            // Three and five lobes, drifting opposite ways: round bulges, always smooth.
+            let swell = 1.7 * sin(3 * u + phase * 0.9) + 0.9 * sin(5 * u - phase * 1.3) - 1.0
+            point.x += normal.dx * swell
+            point.y += normal.dy * swell
             if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
         }
         path.closeSubpath()
