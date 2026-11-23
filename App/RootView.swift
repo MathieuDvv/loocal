@@ -47,6 +47,9 @@ struct RootView: View {
     /// A horizontal swipe on the page itself, moving to the next or previous tab.
     @State private var pageDrag: CGFloat = 0
     @State private var settingsPath: [SettingsPage] = []
+    /// The colour wash running after a switch into (or out of) picture models.
+    @State private var infusion: Infusion?
+    private struct Infusion { let id = UUID(); let entering: Bool }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearance") private var appearance: Appearance = .system
 
@@ -96,6 +99,19 @@ struct RootView: View {
         // A temporary chat is always dark, so it's obvious at a glance you're off the record.
         .preferredColorScheme(tab == .chat && store.isTemporary ? .dark : appearance.scheme)
         .animation(.smooth(duration: 0.35), value: appearance)
+        // Picking a picture model floods the app with colour for a moment; leaving drains it.
+        .overlay {
+            if let infusion { PaintInfusion(entering: infusion.entering).id(infusion.id) }
+        }
+        .onChange(of: store.isPainting) { _, painting in
+            guard tab == .chat, !reduceMotion else { return }
+            let wash = Infusion(entering: painting)
+            infusion = wash
+            Task {
+                try? await Task.sleep(for: .seconds(PaintInfusion.duration(entering: painting) + 0.15))
+                if infusion?.id == wash.id { infusion = nil }
+            }
+        }
         .onOpenURL { url in
             if let link = Self.sharedModelLink(url) {
                 Task { await store.addModel(from: link) }
@@ -441,7 +457,7 @@ struct ChatView: View {
             // The chat runs on under the prompt bar, fading into the paper toward the nav.
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
-                    if store.current.messages.isEmpty && store.composerReady && store.draft.isEmpty && !hasAttachments {
+                    if store.current.messages.isEmpty && store.composerReady && store.draft.isEmpty && !hasAttachments && !store.isPainting {
                         suggestions.transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                     if hasAttachments && store.composerReady {
@@ -464,8 +480,8 @@ struct ChatView: View {
         .onChange(of: attachOpen) { _, open in if open { composerFocused = false; withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) { personaOpen = false } } }
         .onChange(of: personaOpen) { _, open in if open { composerFocused = false; closeAttach() } }
         .onAppear { IslandArt.photos = store.files.images }
-        .onChange(of: store.selectedModelID) { _, _ in
-            if !store.model.vision { withAnimation(.smooth) { store.discardAttachment() } }
+        .onChange(of: store.selectorID) { _, _ in
+            if !store.model.vision || store.isPainting { withAnimation(.smooth) { store.discardAttachment() } }
         }
         // Whatever joins the message also lands in the text as an island, at the cursor;
         // whatever leaves it takes its island along.
@@ -521,7 +537,7 @@ struct ChatView: View {
 
     /// The model selector, with the chat fading out under it as it scrolls up.
     private var selectorBar: some View {
-        ModelSelector(options: store.chatModels, disabled: store.isWorking, selection: $store.selectedModelID, dimmed: !store.download.isReady)
+        ModelSelector(options: store.models, disabled: store.isWorking, selection: $store.selectorID, dimmed: !(store.paintDownload ?? store.download).isReady)
             .frame(maxWidth: .infinity)
             .padding(.top, 6).padding(.bottom, 8)
             .overlay(alignment: .bottom) {
@@ -685,7 +701,8 @@ struct ChatView: View {
 
     private func row(_ message: ChatMessage) -> some View {
         let isHeld = held == message.id
-        return MessageView(message: message, imageDirectory: store.files.images, phase: store.phase)
+        return MessageView(message: message, imageDirectory: store.files.images, phase: store.phase,
+                           paintStep: store.paintSteps[message.id], fresh: store.freshPaintings.contains(message.id))
             // Held: it lifts a touch, the others fade back a little, and its actions pop up
             // under it. No dimmed screen.
             .scaleEffect(isHeld ? 1.02 : 1, anchor: message.role == .user ? .trailing : .leading)
@@ -795,7 +812,8 @@ struct ChatView: View {
             if store.composerReady {
                 input.transition(.blurReplace.combined(with: .scale(0.98)))
             } else {
-                DownloadComposer(download: store.download, model: store.model)
+                DownloadComposer(download: store.paintDownload ?? store.download, model: store.paintModel ?? store.model)
+                    .id(store.selectorID)
                     .transition(.blurReplace.combined(with: .scale(0.98)))
             }
         }
@@ -812,14 +830,15 @@ struct ChatView: View {
             HStack(alignment: .bottom, spacing: 6) {
                 HStack(spacing: 0) {
                     AttachControl(open: $attachOpen, connectors: store.connectors, active: [], vision: store.model.vision, act: handle)
-                        .disabled(store.isBusy || isPreparingPhoto)
+                        .disabled(store.isBusy || isPreparingPhoto || store.isPainting)
+                        .opacity(store.isPainting ? 0.35 : 1)
                         .zIndex(1) // the tray unrolls over its neighbours
                 }
                 // Takes only its button's room in the row: the open tray draws over the prompt
                 // instead of pushing it aside.
                 .frame(width: 38, height: 38, alignment: .leading)
                 .zIndex(1)
-                IslandField(text: $store.draft, islands: store.draftIslands, placeholder: store.persona.map { "Ask \($0.name)" } ?? "Ask anything",
+                IslandField(text: $store.draft, islands: store.draftIslands, placeholder: store.isPainting ? "Describe a picture" : store.persona.map { "Ask \($0.name)" } ?? "Ask anything",
                             focused: $composerFocused, enabled: !store.isBusy, frozen: attachOpen || personaOpen, controller: islandField,
                             tools: toolWords, removed: islandRemoved, promote: promote)
                     // The text field is a UIKit view and wins taps over SwiftUI drawn above it,
@@ -956,6 +975,8 @@ struct MessageView: View {
     let message: ChatMessage
     let imageDirectory: URL
     var phase = ""
+    var paintStep: PaintStep? = nil
+    var fresh = false
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -980,7 +1001,15 @@ struct MessageView: View {
         .padding(.leading, 48)
     }
 
-    private var assistant: some View {
+    @ViewBuilder private var assistant: some View {
+        if let paint = message.paint {
+            PaintCanvasView(info: paint, status: message.status, step: paintStep, image: photo, fresh: fresh)
+        } else {
+            reply
+        }
+    }
+
+    private var reply: some View {
         VStack(alignment: .leading, spacing: 12) {
             if let tools = message.tools, !tools.isEmpty {
                 ToolTrail(tools: tools).transition(.opacity)

@@ -11,14 +11,34 @@ final class AppState {
     private(set) var downloads: [String: ModelDownload]
     /// Models shared to Loocal from Hugging Face, on top of the three built in.
     private(set) var sharedModels: [SharedModel] { didSet { ModelLibrary.save(sharedModels, files) } }
-    /// Every model, small → large. Picture models are among them, for Settings.
-    var models: [ModelChoice] { ModelChoice.ordered(ModelChoice.all + sharedModels.map(\.choice)) }
+    /// Every model: chat models small → large, then picture models (far right of the carousel).
+    var models: [ModelChoice] {
+        let all = ModelChoice.ordered(ModelChoice.all + sharedModels.map(\.choice))
+        return all.filter(\.chats) + all.filter { !$0.chats }
+    }
     /// The models a chat can use, for the carousel.
     var chatModels: [ModelChoice] { models.filter(\.chats) }
     /// A Hugging Face model being looked up after it was shared.
     var addingModel: String?
     /// The model just shared: Settings › Models opens on it and it's marked a moment.
     var revealedModelID: String?
+    /// A picture model picked in the carousel: the chat paints instead of answering.
+    var paintModelID: String? { didSet { UserDefaults.standard.set(paintModelID, forKey: "model.paint") } }
+    var paintModel: ModelChoice? { paintModelID.flatMap { id in models.first { $0.id == id && !$0.chats } } }
+    var paintDownload: ModelDownload? { paintModel.flatMap { downloads[$0.id] } }
+    var isPainting: Bool { paintModel != nil }
+    /// The carousel's pick: the picture model while painting, the chat model otherwise.
+    var selectorID: String {
+        get { paintModel?.id ?? selectedModelID }
+        set {
+            if models.contains(where: { $0.id == newValue && !$0.chats }) { paintModelID = newValue }
+            else { paintModelID = nil; selectedModelID = newValue }
+        }
+    }
+    /// How far each picture being painted has got, by reply id.
+    private(set) var paintSteps: [UUID: PaintStep] = [:]
+    /// Pictures finished while on screen, which brush themselves in once.
+    var freshPaintings: Set<UUID> = []
     /// Open-source Kokoro voices for speech output.
     let neuralVoices: NeuralVoiceStore
     /// Errands: one-off and scheduled jobs the model carries out on device.
@@ -61,6 +81,7 @@ final class AppState {
     var notice: String?
     var error: String?
     @ObservationIgnored private let engine = InferenceEngine()
+    @ObservationIgnored private let painter = Painter()
     @ObservationIgnored private let continued = ContinuedInference()
     @ObservationIgnored private let activity = ActivityController()
     @ObservationIgnored private var jobs: [UUID: Task<Void, Never>] = [:]
@@ -69,7 +90,7 @@ final class AppState {
     @ObservationIgnored private var lastSaved = Date.distantPast
     private(set) var isDemo = false
     /// The prompt box shows once the model is installed (the simulator demo pretends it is).
-    var composerReady: Bool { download.isReady || isDemo }
+    var composerReady: Bool { (paintDownload ?? download).isReady || isDemo }
     /// Short UIKit grace period, used only when iOS declined the continued-processing task.
     @ObservationIgnored private var graceTask: UIBackgroundTaskIdentifier = .invalid
 
@@ -82,7 +103,7 @@ final class AppState {
     }
 
     var current: Conversation { conversations.first(where: { $0.id == selectedID }) ?? Conversation() }
-    var canSend: Bool { download.isReady && !isBusy && (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachmentName != nil || !attachedFiles.isEmpty) }
+    var canSend: Bool { composerReady && !isBusy && (isPainting ? !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty : true) && (!draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || attachmentName != nil || !attachedFiles.isEmpty) }
 
     init() throws {
         _ = MemoryHeadroom.bytes // notes how much iOS lets Loocal use, before any model loads
@@ -97,6 +118,8 @@ final class AppState {
         for model in shared { downloads[model.choice.id] = Self.download(model.choice, spec: model.spec, files: files) }
         self.downloads = downloads
         sharedModels = shared
+        let paint = UserDefaults.standard.string(forKey: "model.paint")
+        paintModelID = shared.contains { $0.choice.id == paint && !$0.choice.chats } ? paint : nil
         neuralVoices = NeuralVoiceStore(models: files.models)
         VoiceLibrary.preload()
         let saved = UserDefaults.standard.string(forKey: "model") ?? ""
@@ -171,6 +194,7 @@ final class AppState {
         guard choice.custom else { return }
         guard !isWorking else { notice = "Wait for the replies being written to finish, then remove \(choice.name)."; return }
         if selectedModelID == choice.id { selectedModelID = ModelChoice.standard.id }
+        if paintModelID == choice.id { paintModelID = nil }
         downloads[choice.id]?.remove()
         downloads[choice.id] = nil
         sharedModels.removeAll { $0.choice.id == choice.id }
@@ -640,6 +664,7 @@ final class AppState {
     func send() {
         guard canSend, let index = conversations.firstIndex(where: { $0.id == selectedID }) else { return }
         let prompt = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let paintModel { paint(IslandText.stripped(prompt), with: paintModel, in: index); return }
         guard prompt.count <= 6000 else { error = "Shorten your prompt to 6,000 characters or fewer for the phone context."; return }
         let fallback = attachedFiles.isEmpty ? "Describe this image." : "Summarize the attached file."
         let context = attachedFiles.isEmpty ? nil : attachedFiles.map { "Attached file “\($0.name)”:\n\($0.text)" }.joined(separator: "\n\n")
@@ -811,6 +836,74 @@ final class AppState {
             }
             replying.remove(conversationID)
             endJob(replyID, success: success, finalPhase: success ? "Reply ready" : "Stopped")
+        }
+    }
+
+    // MARK: Painting
+
+    /// Paints the prompt with the picked picture model, as a reply in the chat.
+    private func paint(_ prompt: String, with model: ModelChoice, in index: Int) {
+        guard let download = downloads[model.id], !prompt.isEmpty else { return }
+        conversations[index].append(ChatMessage(role: .user, text: prompt))
+        draft = ""
+        draftIslands = []
+        attachedFiles = []
+        activeConnectors = []
+        discardAttachment()
+        let replyID = UUID()
+        let conversationID = conversations[index].id
+        let side = Painter.side
+        conversations[index].messages.append(ChatMessage(id: replyID, role: .assistant, text: "", status: .generating,
+                                                         paint: PaintInfo(prompt: prompt, width: side, height: side, model: model.name)))
+        paintSteps[replyID] = PaintStep(done: 0, total: 0)
+        error = nil
+        notice = nil
+        replying.insert(conversationID)
+        save()
+        let directory = download.directory, temporary = isTemporary
+        launch(replyID, model: model, phase: "Preparing the canvas", expire: "iOS ended the background task before the picture was done.") { [weak self] in
+            self?.runPaint(model: model, directory: directory, prompt: prompt, temporary: temporary, conversationID: conversationID, replyID: replyID)
+        }
+    }
+
+    private func runPaint(model: ModelChoice, directory: URL, prompt: String, temporary: Bool, conversationID: UUID, replyID: UUID) {
+        jobs[replyID] = Task {
+            var success = false
+            do {
+                // The chat model and voice engine step aside: painting wants the memory.
+                await engine.unload()
+                await KokoroEngine.shared.unload()
+                let picture = try await painter.paint(model: model, directory: directory, prompt: prompt) { done, total in
+                    await MainActor.run {
+                        self.paintSteps[replyID] = PaintStep(done: done, total: total)
+                        self.phases[replyID] = done < total ? "Painting · step \(done + 1) of \(total)" : "Finishing"
+                        self.reportProgress(force: true)
+                    }
+                }
+                try Task.checkCancellation()
+                let images = files.images
+                let name = (temporary ? LocalFiles.temporaryImages + "/" : "") + UUID().uuidString + ".png"
+                try await Task.detached(priority: .userInitiated) {
+                    guard let data = UIImage(cgImage: picture).pngData() else { throw IslandError.message("The picture couldn’t be saved.") }
+                    try FileManager.default.createDirectory(at: images.appendingPathComponent(name).deletingLastPathComponent(), withIntermediateDirectories: true)
+                    try data.write(to: images.appendingPathComponent(name), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+                }.value
+                if let ci = conversations.firstIndex(where: { $0.id == conversationID }), let mi = conversations[ci].messages.firstIndex(where: { $0.id == replyID }) {
+                    conversations[ci].messages[mi].imageName = name
+                }
+                freshPaintings.insert(replyID)
+                markReply(conversationID, replyID, status: .complete)
+                success = true
+            } catch {
+                markReply(conversationID, replyID, status: .interrupted)
+                if Task.isCancelled {
+                    let reason = stopReasons[replyID] ?? "Painting stopped."
+                    if !reason.isEmpty { notice = reason }
+                } else { self.error = error.localizedDescription }
+            }
+            paintSteps[replyID] = nil
+            replying.remove(conversationID)
+            endJob(replyID, success: success, finalPhase: success ? "Picture ready" : "Stopped")
         }
     }
 

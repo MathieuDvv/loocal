@@ -131,6 +131,8 @@ struct ChatMessage: Identifiable, Codable, Sendable, Equatable {
     var tools: [ToolUse]? = nil
     /// Tools, connectors and attachments placed in the prompt's text as `⟦id⟧` markers.
     var islands: [Island]? = nil
+    /// A picture this reply paints (or painted, once `imageName` is set).
+    var paint: PaintInfo? = nil
     /// The prompt as a person reads it, islands by name.
     var readable: String { IslandText.titled(text, islands ?? []) }
 }

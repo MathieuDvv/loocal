@@ -114,6 +114,13 @@ enum ModelLibrary {
         let family: ModelChoice.Family
         var bits = info.config?.quantization_config?.bits
         if image {
+            // Painting runs Stable Diffusion pipelines (SDXL, SD 1.x and 2.x) in diffusers format.
+            let index = URL(string: "https://huggingface.co/\(info.id)/resolve/\(revision)/model_index.json")!
+            let (indexData, _) = try await session.data(from: index)
+            let pipeline = ((try? JSONSerialization.jsonObject(with: indexData)) as? [String: Any])?["_class_name"] as? String
+            guard let pipeline, Painter.Pipeline(className: pipeline) != nil else {
+                throw IslandError.message("Loocal paints with Stable Diffusion models in diffusers format, like stabilityai/sdxl-turbo. \(info.id) \(pipeline.map { "is a \($0)." } ?? "has no diffusers pipeline.")")
+            }
             family = .image
         } else {
             guard files.contains(where: { $0.name == "config.json" }), files.contains(where: { $0.name == "tokenizer.json" }) else {

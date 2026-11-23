@@ -17,8 +17,10 @@
 		20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */; };
 		21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		30A94069FC37428167BF5A54 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C71349CFF13171A2E55320 /* Theme.swift */; };
+		3FFF4EABA197E64AC064751C /* Painter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39249B8F90D2351AB47E609D /* Painter.swift */; };
 		419FFCC80A299C454F63943B /* ToolTrail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00D2BAB9C2DD2CCDB41D004 /* ToolTrail.swift */; };
 		4EE5CB7A137FD195F29564F3 /* SpiralLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229E58158AD92116CD41ADB1 /* SpiralLoader.swift */; };
+		50B7B5744452BF8CFE84CB74 /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = 1C586BCA27A84EA6D3F67A47 /* StableDiffusion */; };
 		50F1045A293DE9B896E98301 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD14ACE55E6145BA4B6257E /* Shortcuts.swift */; };
 		525EFFF3F7D0CD7DE0821105 /* Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD10BD5F41D3E6D907AC504 /* Actions.swift */; };
 		554DA5C2F34F46ED42A54646 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */; };
@@ -31,6 +33,7 @@
 		875469A8D7731A5C4803F0B1 /* IslandAIUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */; };
 		8EE51A3EFAF488A0EBB538AD /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
 		8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
+		92CC6707A33C4BB2E360ABD5 /* PaintEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2778C9EAB217FD0CFD6DF1CF /* PaintEffects.swift */; };
 		952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653CD09EBA0E45B6698638FA /* Errands.swift */; };
 		97DBB7910B3CF8CD7CC2CBE5 /* IslandApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8276B61D49085B45D50D16D5 /* IslandApp.swift */; };
 		97F5EE7647F515ED8D9EACBC /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03A3AEDC1B98C76F7E55DCA2 /* ShareViewController.swift */; };
@@ -131,11 +134,13 @@
 		229E58158AD92116CD41ADB1 /* SpiralLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpiralLoader.swift; sourceTree = "<group>"; };
 		2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSettings.swift; sourceTree = "<group>"; };
 		26A9EEF6FCAADF270EC96FA3 /* LoopGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopGeometry.swift; sourceTree = "<group>"; };
+		2778C9EAB217FD0CFD6DF1CF /* PaintEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintEffects.swift; sourceTree = "<group>"; };
 		28C71349CFF13171A2E55320 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		2918A7036AEB2BE8A68F1259 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; };
 		2CF22D9037BE70F82E748D64 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		35120B9AF11145D8D365941E /* ActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityController.swift; sourceTree = "<group>"; };
+		39249B8F90D2351AB47E609D /* Painter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Painter.swift; sourceTree = "<group>"; };
 		3EE112B746F79F170DD202A0 /* Persona.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Persona.swift; sourceTree = "<group>"; };
 		46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceConversation.swift; sourceTree = "<group>"; };
 		4FDAB0921FB9963792B384E3 /* Geist-Variable.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Geist-Variable.ttf"; sourceTree = "<group>"; };
@@ -177,6 +182,7 @@
 		D4C618DFD3763EE7405E3D03 /* IslandAI.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = IslandAI.entitlements; sourceTree = "<group>"; };
 		D9652090DAC1DCA562179F1E /* IslandAIUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IslandAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DAD14ACE55E6145BA4B6257E /* Shortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shortcuts.swift; sourceTree = "<group>"; };
+		E9A969E82232E928B403CFA0 /* StableDiffusion */ = {isa = PBXFileReference; lastKnownFileType = folder; name = StableDiffusion; path = Vendor/StableDiffusion; sourceTree = SOURCE_ROOT; };
 		E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		F75E134DC0C87F5AA9112D58 /* IslandAITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = IslandAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -194,6 +200,7 @@
 				F234EE4F8032415A54FB5D7E /* MLX in Frameworks */,
 				B4689893A5B1B5716C07FDBF /* MLXNN in Frameworks */,
 				8EE51A3EFAF488A0EBB538AD /* KokoroSwift in Frameworks */,
+				50B7B5744452BF8CFE84CB74 /* StableDiffusion in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +239,8 @@
 				C54894C5F2A98D380BBF0D83 /* ModelSelector.swift */,
 				BA835091533EFEC116B7DD0B /* ModelSpec.swift */,
 				713E40B871A9DBB80A1568C9 /* NeuralVoices.swift */,
+				2778C9EAB217FD0CFD6DF1CF /* PaintEffects.swift */,
+				39249B8F90D2351AB47E609D /* Painter.swift */,
 				1ECEF0BEEC272B8C21C77102 /* Pebble.swift */,
 				3EE112B746F79F170DD202A0 /* Persona.swift */,
 				75DA7D97720043E121C40794 /* RootView.swift */,
@@ -295,6 +304,7 @@
 			isa = PBXGroup;
 			children = (
 				09C5F928206A791EF728C6F9 /* KokoroSwift */,
+				E9A969E82232E928B403CFA0 /* StableDiffusion */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -401,6 +411,7 @@
 				FA117BFC99B2E3BDF985F912 /* MLX */,
 				D31998FB6AD68E158E288CA9 /* MLXNN */,
 				EC91100881F7FCCFF46F5B75 /* KokoroSwift */,
+				1C586BCA27A84EA6D3F67A47 /* StableDiffusion */,
 			);
 			productName = IslandAI;
 			productReference = 56F22ADBCFD16EF3DA90CADA /* IslandAI.app */;
@@ -486,6 +497,7 @@
 				475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */,
 				01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
 				1E496FF6EE25D72429BDBB46 /* XCLocalSwiftPackageReference "Vendor/KokoroSwift" */,
+				5240AF8AF39AD844DB9CD18D /* XCLocalSwiftPackageReference "Vendor/StableDiffusion" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6B2B9CDC3AF64AB199207CCC /* Products */;
@@ -558,6 +570,8 @@
 				016266670CB51C68B2F64D91 /* ModelSelector.swift in Sources */,
 				5A1FAFB15B385B1D2FDEFAE5 /* ModelSpec.swift in Sources */,
 				F0A8CD412AA5CBD4004A455E /* NeuralVoices.swift in Sources */,
+				92CC6707A33C4BB2E360ABD5 /* PaintEffects.swift in Sources */,
+				3FFF4EABA197E64AC064751C /* Painter.swift in Sources */,
 				03D075D2C1A9764BD604BD26 /* Pebble.swift in Sources */,
 				0C8E79533853BFC13D0F5FD6 /* PebbleShape.swift in Sources */,
 				D5ACC3FD00D298D1355ACAA5 /* Persona.swift in Sources */,
@@ -997,6 +1011,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Vendor/KokoroSwift;
 		};
+		5240AF8AF39AD844DB9CD18D /* XCLocalSwiftPackageReference "Vendor/StableDiffusion" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Vendor/StableDiffusion;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -1019,6 +1037,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1C586BCA27A84EA6D3F67A47 /* StableDiffusion */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = StableDiffusion;
+		};
 		2EFC775D79FAA810A07FC584 /* MLXLLM */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */;

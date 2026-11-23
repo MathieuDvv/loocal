@@ -463,7 +463,7 @@ actor InferenceEngine {
         while recent.count > 1 && recent.first?.role == .assistant { recent.removeFirst() }
         var toolTurns: [Chat.Message] = []
         func prepare(_ recent: [ChatMessage]) async throws -> LMInput {
-            let imageID = recent.last(where: { $0.imageName != nil })?.id
+            let imageID = recent.last(where: { $0.role == .user && $0.imageName != nil })?.id // painted pictures aren't photos to read
             let chat: [Chat.Message] = [.system(systemText)] + recent.map { message in
                 // Text-only models never receive images; the photo stays in the transcript.
                 let images: [UserInput.Image] = model.vision && message.id == imageID ? message.imageName.map { [.url(imagesDirectory.appendingPathComponent($0))] } ?? [] : []

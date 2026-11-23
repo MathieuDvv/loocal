@@ -14,6 +14,9 @@ packages:
   # Kokoro-82M neural text-to-speech, vendored as a static package so MLX links once.
   KokoroSwift:
     path: Vendor/KokoroSwift
+  # Stable Diffusion (SDXL Turbo, SD 2.1) on MLX, vendored from mlx-swift-examples.
+  StableDiffusion:
+    path: Vendor/StableDiffusion
 settings:
   base:
     SWIFT_VERSION: '5.0'
@@ -52,6 +55,8 @@ targets:
       product: MLXNN
     - package: KokoroSwift
       product: KokoroSwift
+    - package: StableDiffusion
+      product: StableDiffusion
     - target: IslandActivity
     - target: ShareModel
     scheme:
