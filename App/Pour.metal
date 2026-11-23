@@ -69,26 +69,47 @@ static float3 marble(float2 uv, float time, thread float &depth) {
     return col;
 }
 
+static float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
 /// `fill`: how far the pour has run down (0…1, past the bottom at 1).
 /// `drain`: how far it has cleared from the top (0…1).
-[[ stitchable ]] half4 acrylicPour(float2 position, half4 color, float2 size, float time, float fill, float drain, float2 origin) {
+/// `origin`, `pill`: the selector's centre and size, in points. The paint wells up around
+/// the pill (rounded like it), leaving the pill itself showing, and falls from there.
+[[ stitchable ]] half4 acrylicPour(float2 position, half4 color, float2 size, float time, float fill, float drain, float2 origin, float2 pill) {
     float2 uv = position / size.y;
     float2 o = origin / size.y;
-    float y = uv.y - o.y;       // below the pill
+    float y = uv.y - o.y;       // below the pill's centre
     float x = uv.x - o.x;
+    float2 half_pill = pill * 0.5 / size.y;
+    float margin = 0.014;
+    float aa = 1.5 / size.y;
 
-    // The front drips: fingers of paint run ahead of the rest.
-    float fingers = fbm(float2(uv.x * 7.0, 1.3)) ;
-    float drips = 0.16 * pow(fingers, 2.0) + 0.06 * fbm(float2(uv.x * 18.0, time * 0.6));
-    float front = fill * 1.35 - 0.12 + drips;
-    // Narrow where it leaves the pill, a full sheet a little lower.
-    float spread = 0.05 + max(y, 0.0) * 0.85 + 0.05 * fbm(float2(y * 6.0, time));
-    float inside = smoothstep(0.0, 0.004, front - y)
-                 * smoothstep(-0.006, 0.0, y + 0.015)
-                 * smoothstep(0.0, 0.006, spread - abs(x));
+    // A collar of paint round the pill, rounded the same way.
+    float r = half_pill.y + margin;
+    float collar = length(float2(max(abs(x) - (half_pill.x - half_pill.y), 0.0), y)) - r;
+    // The fall: as wide as the collar where it leaves, swelling out to the screen's edges
+    // over a short drop, like a thick pour spreading.
+    float edge = size.x / size.y * 0.5 + 0.03;
+    float t = clamp(y / 0.3, 0.0, 1.0);
+    float width = (half_pill.x + margin) + (edge - half_pill.x) * t * t * (3.0 - 2.0 * t)
+                + 0.012 * (fbm(float2(y * 9.0, time * 0.8)) - 0.5);
+    float fall = max(abs(x) - width, -y);
+    float shape = smin(collar, fall, 0.05);
+
+    // The front drips: fingers of paint run ahead of the rest, growing as it falls.
+    float fingers = fbm(float2(uv.x * 7.0, 1.3));
+    float drips = (0.16 * pow(fingers, 2.0) + 0.05 * fbm(float2(uv.x * 18.0, time * 0.6))) * min(fill * 3.0, 1.0);
+    float front = -half_pill.y - margin + fill * 1.35 + drips;
+    float inside = smoothstep(aa, -aa, shape) * smoothstep(-aa, aa * 2.0, front - y);
     // Draining: the top edge runs down after it, ragged in the same way.
-    float top = drain * 1.5 - 0.2 + drips * 0.7;
-    inside *= drain > 0.0 ? smoothstep(0.0, 0.004, y - top) : 1.0;
+    float top = drain * 1.5 - 0.25 + drips * 0.7;
+    inside *= drain > 0.0 ? smoothstep(0.0, aa * 2.0, y - top) : 1.0;
+    // The pill itself stays clear: the paint comes out from round it.
+    float hole = length(float2(max(abs(x) - (half_pill.x - half_pill.y), 0.0), y)) - half_pill.y;
+    inside *= smoothstep(-aa, aa, hole);
     if (inside <= 0.0) { return half4(0.0); }
 
     float depth;

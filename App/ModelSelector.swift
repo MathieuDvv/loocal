@@ -21,6 +21,14 @@ struct ModelSelector: View {
     @State private var openedByTap = false
     @State private var midX: CGFloat = 0     // centre in screen space, for tap-to-pick
 
+    /// Where the chat's selector sits on screen, for the paint poured out of it.
+    @MainActor static var screenCenter: CGPoint?
+    /// The capsule's size at rest around `name`.
+    static func restingSize(_ name: String) -> CGSize {
+        let font = UIFont(name: "Geist-Medium", size: 15) ?? .systemFont(ofSize: 15, weight: .medium)
+        return CGSize(width: ceil((name as NSString).size(withAttributes: [.font: font]).width) + 34, height: 38)
+    }
+
     private let slot: CGFloat = 124
     private let height: CGFloat = 38
     private let expandedWidth: CGFloat = 300
@@ -103,15 +111,15 @@ struct ModelSelector: View {
         .background {
             ZStack {
                 Capsule().fill(Ink.fill)
-                // Wet paint while a picture model is picked; it dries back to ink when opened.
-                LiquidPaint().opacity(painted && !expanded ? 1 : 0)
+                // Wet paint while a picture model is picked, closed or opened.
+                LiquidPaint().opacity(painted ? 1 : 0)
             }
         }
-        .overlay(Capsule().stroke(Ink.hairline.opacity(expanded ? 1 : 0)))
+        .overlay(Capsule().stroke(Ink.hairline.opacity(expanded && !painted ? 1 : 0)))
         .scaleEffect(dragging ? 1.02 : 1)
         .shadow(color: glow, radius: 12, y: 4)
         .contentShape(.capsule)
-        .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).midX } action: { midX = $0 }
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { midX = $0.midX; Self.screenCenter = CGPoint(x: $0.midX, y: $0.midY) }
         .gesture(drag, isEnabled: !disabled)
         .opacity(disabled ? 0.5 : 1)
         .animation(.smooth(duration: 0.5), value: painted)
@@ -124,7 +132,7 @@ struct ModelSelector: View {
                 // The brush between chat and picture models.
                 Image(systemName: "paintbrush.pointed.fill")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(LiquidPaint.gradient)
+                    .foregroundStyle(painted ? AnyShapeStyle(.white) : AnyShapeStyle(LiquidPaint.gradient))
                     .rotationEffect(.degrees(-35))
                     .offset(x: ((CGFloat(split - 1) + screenPosition(split)) / 2 - shown) * slot)
                     .opacity(expanded ? 1 : 0)
@@ -138,7 +146,7 @@ struct ModelSelector: View {
 
     private func name(_ option: ModelChoice, distance: CGFloat, offset: CGFloat) -> some View {
         let centred = distance < 0.5
-        let color: Color = centred ? (painted && !expanded ? .white : dimmed ? Ink.secondary : Ink.primary) : Ink.tertiary
+        let color: Color = painted ? .white.opacity(centred ? 1 : 0.72) : centred ? (dimmed ? Ink.secondary : Ink.primary) : Ink.tertiary
         let opacity: CGFloat = expanded ? max(0, 1 - distance * 0.42) : (centred ? 1 : 0)
         return Text(option.name)
             .font(.geist(15, centred ? .medium : .regular))
@@ -153,7 +161,7 @@ struct ModelSelector: View {
             .allowsHitTesting(false)
     }
 
-    private var glow: Color { painted && !expanded ? Color(red: 1, green: 0.3, blue: 0.5).opacity(0.25) : .black.opacity(expanded ? 0.08 : 0) }
+    private var glow: Color { painted ? Color(red: 1, green: 0.3, blue: 0.5).opacity(0.25) : .black.opacity(expanded ? 0.08 : 0) }
 
     /// Measured in screen space: the capsule widens mid-gesture, which would otherwise
     /// shift local coordinates under the finger and swallow most of the drag.

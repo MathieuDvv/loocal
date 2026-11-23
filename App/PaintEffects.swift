@@ -4,41 +4,40 @@ import UIKit
 // MARK: - Entering paint mode
 
 /// A fluid-acrylic pour: marbled paint (blues, lime, cream, coral, ink, copper veins, white
-/// cells) spills out of the model selector, runs down the whole screen with a dripping front,
-/// keeps flowing for a moment, then drains away from the top. Leaving paint mode, a short
-/// splash runs out of the pill and is drawn back in. Drawn by `acrylicPour` (Pour.metal).
+/// cells) wells up round the model selector, rounded like the pill, and pours down the whole
+/// screen with a dripping front, then drains away. Drawn by `acrylicPour` (Pour.metal).
 struct PaintInfusion: View {
-    let entering: Bool
-    /// Where the paint comes from (and goes back to): the selector, near the top.
-    var origin = UnitPoint(x: 0.5, y: 0.095)
+    /// The selector's centre and size, in this view's (full-screen) space.
+    let origin: CGPoint
+    let pill: CGSize
     @State private var start = Date.now
 
-    static func duration(entering: Bool) -> Double { entering ? 3.0 : 0.8 }
+    static var duration: Double { 1.85 * pace }
+    /// `-slowPour` (debug builds) plays it five times slower, to look at it closely.
+    #if DEBUG
+    static let pace: Double = ProcessInfo.processInfo.arguments.contains("-slowPour") ? 5 : 1
+    #else
+    static let pace: Double = 1
+    #endif
 
     /// How far the pour has run down, and how far it has drained, `elapsed` seconds in.
     private func phases(_ elapsed: Double) -> (fill: Double, drain: Double) {
         func ease(_ t: Double) -> Double { let t = min(max(t, 0), 1); return t * t * (3 - 2 * t) }
-        if entering {
-            // Starts as a trickle and speeds up as it falls, fills by 1.3 s, flows, then
-            // drains from 1.8 s.
-            let fill = pow(min(max(elapsed / 1.3, 0), 1), 1.7)
-            return (fill, ease((elapsed - 1.8) / 1.1))
-        }
-        // A splash out of the pill, then drawn back up into it.
-        let t = elapsed / Self.duration(entering: false)
-        return (0.32 * sin(min(max(t, 0), 1) * .pi), 0)
+        // Wells up, then speeds down the screen (gravity); drains from just after it lands.
+        let fill = pow(min(max(elapsed / 0.7, 0), 1), 1.5)
+        return (fill, ease((elapsed - 0.95) / 0.8))
     }
 
     var body: some View {
         GeometryReader { proxy in
             TimelineView(.animation) { context in
-                let elapsed = context.date.timeIntervalSince(start)
+                let elapsed = context.date.timeIntervalSince(start) / Self.pace
                 let (fill, drain) = phases(elapsed)
                 Rectangle()
                     .fill(.white)
                     .colorEffect(ShaderLibrary.acrylicPour(
                         .float2(proxy.size), .float(elapsed + 3), .float(fill), .float(drain),
-                        .float2(CGPoint(x: origin.x * proxy.size.width, y: origin.y * proxy.size.height))))
+                        .float2(origin), .float2(pill)))
             }
         }
         .ignoresSafeArea()

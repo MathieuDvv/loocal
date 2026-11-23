@@ -47,9 +47,9 @@ struct RootView: View {
     /// A horizontal swipe on the page itself, moving to the next or previous tab.
     @State private var pageDrag: CGFloat = 0
     @State private var settingsPath: [SettingsPage] = []
-    /// The colour wash running after a switch into (or out of) picture models.
-    @State private var infusion: Infusion?
-    private struct Infusion { let id = UUID(); let entering: Bool }
+    /// The paint pouring out of the selector after a switch into picture models.
+    @State private var pour: Pour?
+    private struct Pour { let id = UUID(); let origin: CGPoint; let pill: CGSize }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearance") private var appearance: Appearance = .system
 
@@ -99,17 +99,19 @@ struct RootView: View {
         // A temporary chat is always dark, so it's obvious at a glance you're off the record.
         .preferredColorScheme(tab == .chat && store.isTemporary ? .dark : appearance.scheme)
         .animation(.smooth(duration: 0.35), value: appearance)
-        // Picking a picture model floods the app with colour for a moment; leaving drains it.
+        // Picking a picture model pours paint out of the selector for a moment.
         .overlay {
-            if let infusion { PaintInfusion(entering: infusion.entering).id(infusion.id) }
+            if let pour {
+                PaintInfusion(origin: pour.origin, pill: pour.pill).id(pour.id)
+            }
         }
         .onChange(of: store.isPainting) { _, painting in
-            guard tab == .chat, !reduceMotion else { return }
-            let wash = Infusion(entering: painting)
-            infusion = wash
+            guard painting, tab == .chat, !reduceMotion, let center = ModelSelector.screenCenter else { pour = nil; return }
+            let wash = Pour(origin: center, pill: ModelSelector.restingSize(store.paintModel?.name ?? ""))
+            pour = wash
             Task {
-                try? await Task.sleep(for: .seconds(PaintInfusion.duration(entering: painting) + 0.15))
-                if infusion?.id == wash.id { infusion = nil }
+                try? await Task.sleep(for: .seconds(PaintInfusion.duration + 0.1))
+                if pour?.id == wash.id { pour = nil }
             }
         }
         .onOpenURL { url in
