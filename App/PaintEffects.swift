@@ -185,8 +185,10 @@ private struct BrushCover: View {
     let coverage: Double
     @Environment(\.colorScheme) private var scheme
 
-    private struct Bristle { let offset: CGFloat; let width: CGFloat; let alpha: Double; let from: CGFloat; let to: CGFloat }
-    private struct Stroke { let start: CGPoint; let end: CGPoint; let bend: CGFloat; let width: CGFloat; let tone: Double; let bristles: [Bristle] }
+    /// One bristle's streak: where it sits across the stroke, how wide and dark, where it
+    /// starts and stops along it, and how its edges waver.
+    private struct Bristle { let offset: CGFloat; let width: CGFloat; let alpha: Double; let from: CGFloat; let to: CGFloat; let phase: CGFloat; let wave: CGFloat }
+    private struct Stroke { let start: CGPoint; let end: CGPoint; let bend: CGFloat; let width: CGFloat; let tone: Double; let skew: CGFloat; let phase: CGFloat; let bristles: [Bristle] }
 
     static let count = 70
 
@@ -199,12 +201,45 @@ private struct BrushCover: View {
             let length = 0.3 + rng.unit() * 0.45
             let d = CGPoint(x: cos(angle) * length / 2, y: sin(angle) * length / 2)
             let bristles = (0..<9).map { _ in
-                Bristle(offset: rng.unit() - 0.5, width: 0.06 + rng.unit() * 0.12, alpha: 0.35 + Double(rng.unit()) * 0.65,
-                        from: rng.unit() * 0.12, to: 0.86 + rng.unit() * 0.14)
+                Bristle(offset: rng.unit() - 0.5, width: 0.08 + rng.unit() * 0.14, alpha: 0.35 + Double(rng.unit()) * 0.65,
+                        from: rng.unit() * 0.1, to: 0.88 + rng.unit() * 0.12, phase: rng.unit() * 6.3, wave: 2 + rng.unit() * 5)
             }
             return Stroke(start: CGPoint(x: center.x - d.x, y: center.y - d.y), end: CGPoint(x: center.x + d.x, y: center.y + d.y),
-                          bend: (rng.unit() - 0.5) * 0.15, width: 0.08 + rng.unit() * 0.08, tone: Double(rng.unit()), bristles: bristles)
+                          bend: (rng.unit() - 0.5) * 0.15, width: 0.08 + rng.unit() * 0.08, tone: Double(rng.unit()),
+                          skew: (rng.unit() - 0.5) * 1.4, phase: rng.unit() * 6.3, bristles: bristles)
         }
+    }
+
+    /// A ribbon along the curve a→b (control c), `offset` across it: its half-width wavers
+    /// along the way (`width(t)`), and its ends are cut straight but slanted (`skew`), like a
+    /// flat brush set down and lifted off.
+    private static func ribbon(_ a: CGPoint, _ b: CGPoint, _ c: CGPoint, offset: CGFloat, from: CGFloat, to: CGFloat,
+                               skew: CGFloat, width: (CGFloat) -> CGFloat) -> Path {
+        func point(_ t: CGFloat) -> CGPoint {
+            let u = 1 - t
+            return CGPoint(x: u * u * a.x + 2 * u * t * c.x + t * t * b.x, y: u * u * a.y + 2 * u * t * c.y + t * t * b.y)
+        }
+        func normal(_ t: CGFloat) -> CGVector {
+            let d = CGVector(dx: 2 * (1 - t) * (c.x - a.x) + 2 * t * (b.x - c.x), dy: 2 * (1 - t) * (c.y - a.y) + 2 * t * (b.y - c.y))
+            let l = max(hypot(d.dx, d.dy), 0.001)
+            return CGVector(dx: -d.dy / l, dy: d.dx / l)
+        }
+        guard to > from else { return Path() }
+        let steps = 18
+        var left: [CGPoint] = [], right: [CGPoint] = []
+        for i in 0...steps {
+            let t = from + (to - from) * CGFloat(i) / CGFloat(steps)
+            let p = point(t), n = normal(t), w = width(t)
+            // The slant: one edge reaches a little further than the other at each end.
+            let slant = (i == 0 ? -1 : i == steps ? 1 : 0) * skew * w
+            let along = CGVector(dx: n.dy, dy: -n.dx)
+            left.append(CGPoint(x: p.x + n.dx * (offset + w) - along.dx * slant, y: p.y + n.dy * (offset + w) - along.dy * slant))
+            right.append(CGPoint(x: p.x + n.dx * (offset - w) + along.dx * slant, y: p.y + n.dy * (offset - w) + along.dy * slant))
+        }
+        var path = Path()
+        path.addLines(left + right.reversed())
+        path.closeSubpath()
+        return path
     }
 
     var body: some View {
@@ -219,25 +254,23 @@ private struct BrushCover: View {
                 let a = CGPoint(x: stroke.start.x * size.width, y: stroke.start.y * size.height)
                 let b = CGPoint(x: stroke.end.x * size.width, y: stroke.end.y * size.height)
                 let length = max(hypot(b.x - a.x, b.y - a.y), 1)
-                let normal = CGVector(dx: -(b.y - a.y) / length, dy: (b.x - a.x) / length)
-                let control = CGPoint(x: (a.x + b.x) / 2 + normal.dx * stroke.bend * size.width, y: (a.y + b.y) / 2 + normal.dy * stroke.bend * size.width)
+                let n = CGVector(dx: -(b.y - a.y) / length, dy: (b.x - a.x) / length)
+                let c = CGPoint(x: (a.x + b.x) / 2 + n.dx * stroke.bend * size.width, y: (a.y + b.y) / 2 + n.dy * stroke.bend * size.width)
                 let width = stroke.width * size.width
                 // Greys a little darker or lighter than the ground, so overlaps read as layers.
                 let tone = dark ? 0.22 + stroke.tone * 0.24 : 0.6 + stroke.tone * 0.28
-                var body = Path()
-                body.move(to: a)
-                body.addQuadCurve(to: b, control: control)
-                canvas.stroke(body.trimmedPath(from: 0.04, to: 0.04 + 0.92 * drawn), with: .color(Color(white: tone).opacity(0.55)),
-                              style: StrokeStyle(lineWidth: width * 0.8, lineCap: .round))
+                // The body of paint: swelling and pinching along its length, never a straight edge.
+                let body = Self.ribbon(a, b, c, offset: 0, from: 0.03, to: 0.03 + 0.93 * drawn, skew: stroke.skew) { t in
+                    width * 0.4 * (0.82 + 0.12 * sin(t * 9 + stroke.phase) + 0.06 * sin(t * 23 + stroke.phase * 2))
+                }
+                canvas.fill(body, with: .color(Color(white: tone).opacity(0.55)))
+                // Bristle streaks over it, each its own length, so the ends fray.
                 for bristle in stroke.bristles {
-                    let shift = bristle.offset * width
-                    var path = Path()
-                    path.move(to: CGPoint(x: a.x + normal.dx * shift, y: a.y + normal.dy * shift))
-                    path.addQuadCurve(to: CGPoint(x: b.x + normal.dx * shift, y: b.y + normal.dy * shift),
-                                      control: CGPoint(x: control.x + normal.dx * shift, y: control.y + normal.dy * shift))
-                    canvas.stroke(path.trimmedPath(from: bristle.from, to: bristle.from + (bristle.to - bristle.from) * drawn),
-                                  with: .color(Color(white: tone + (bristle.alpha - 0.6) * 0.14).opacity(bristle.alpha)),
-                                  style: StrokeStyle(lineWidth: bristle.width * width, lineCap: .round))
+                    let streak = Self.ribbon(a, b, c, offset: bristle.offset * width, from: bristle.from,
+                                             to: bristle.from + (bristle.to - bristle.from) * drawn, skew: stroke.skew) { t in
+                        bristle.width * width * 0.5 * (0.7 + 0.3 * sin(t * bristle.wave * 3 + bristle.phase))
+                    }
+                    canvas.fill(streak, with: .color(Color(white: tone + (bristle.alpha - 0.6) * 0.14).opacity(bristle.alpha)))
                 }
             }
         }

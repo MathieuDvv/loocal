@@ -85,12 +85,15 @@ struct SendControl: View {
     private var tint: Color? { BotTint.color(for: store.personaID) }
 
     private var button: some View {
-        Image(systemName: open ? "xmark" : "arrow.up")
+        // Painting, it's a brush on wet paint.
+        let painting = store.isPainting && !open
+        return Image(systemName: open ? "xmark" : painting ? "paintbrush.pointed.fill" : "arrow.up")
             .font(.system(size: open ? 13 : 16, weight: .semibold))
             .contentTransition(.symbolEffect(.replace))
-            .foregroundStyle(open ? Ink.secondary : (canSend ? (tint == nil ? Ink.paper : .white) : Ink.tertiary))
+            .foregroundStyle(open ? Ink.secondary : painting && canSend ? .white : (canSend ? (tint == nil ? Ink.paper : .white) : Ink.tertiary))
             .symbolEffect(.bounce.up, value: sendTaps)
             .frame(width: size, height: size)
+            .background { if painting && canSend { LiquidPaint().clipShape(.circle) } }
             .background(open ? Ink.fill : (canSend ? tint ?? Ink.primary : Ink.hairline), in: .circle)
             .animation(.smooth(duration: 0.35), value: store.personaID)
             .scaleEffect(pressing && !open ? 0.9 : (canSend || open ? 1 : 0.92))

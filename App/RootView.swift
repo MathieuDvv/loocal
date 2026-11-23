@@ -449,7 +449,7 @@ struct ChatView: View {
         VStack(spacing: 0) {
             ZStack {
                 if store.current.messages.isEmpty {
-                    EmptyChatView(temporary: store.isTemporary, toggleTemporary: store.toggleTemporary)
+                    EmptyChatView(temporary: store.isTemporary, painting: store.isPainting, toggleTemporary: store.toggleTemporary)
                         .transition(.opacity.combined(with: .scale(scale: 0.98)))
                 } else {
                     transcript.id(store.selectedID)
@@ -928,9 +928,12 @@ private struct SuggestionRow: View {
 
 struct EmptyChatView: View {
     let temporary: Bool
+    /// A picture model is picked: the page becomes a painter's, a village at its foot.
+    var painting = false
     var toggleTemporary: () -> Void = {}
     @State private var appeared = false
     @State private var flips = 0
+    @State private var pageWidth: CGFloat = 400
 
     /// A suggestion. `{tool}` in its text (a connector id) becomes that tool's island.
     struct Prompt { let title: String; let detail: String; let text: String }
@@ -942,6 +945,50 @@ struct EmptyChatView: View {
     ]
 
     var body: some View {
+        ZStack {
+            if painting {
+                easel.transition(.opacity)
+            } else {
+                chat.transition(.opacity)
+            }
+        }
+        .animation(.smooth(duration: 0.45), value: painting)
+        .onAppear { appeared = true }
+    }
+
+    /// Paint mode: the question, and below it a village after Pissarro (Knokke, 1894), its sky
+    /// taken away so it stands on the page itself, with a few of its clouds left floating.
+    private var easel: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 24)
+            Text("What are we \(Text("painting?").font(.serif(40, italic: true)))")
+                .font(.serif(40)).tracking(-0.4)
+                .multilineTextAlignment(.center).foregroundStyle(Ink.primary)
+                .padding(.horizontal, 32)
+                .rise(appeared, delay: 0.04)
+            Spacer(minLength: 12)
+            // Always the full width; when the keyboard leaves less room, its foot is cropped
+            // rather than the whole painting shrinking (which would show its square sides).
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(maxHeight: pageWidth * 668 / 800)
+                .overlay(alignment: .top) {
+                    Image("PaintVillage")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                }
+                .clipped()
+                // Its foot fades into the page, just above the prompt.
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.86), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom))
+                .accessibilityHidden(true)
+                .rise(appeared, delay: 0.1, distance: 16)
+        }
+        .frame(maxWidth: .infinity)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
+    }
+
+    private var chat: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 24)
             VStack(spacing: 18) {
@@ -980,7 +1027,6 @@ struct EmptyChatView: View {
             Spacer(minLength: 24)
         }
         .frame(maxWidth: .infinity)
-        .onAppear { appeared = true }
     }
 }
 
