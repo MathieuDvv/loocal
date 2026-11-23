@@ -11,7 +11,7 @@ let package = Package(
     .library(name: "KokoroSwift", targets: ["KokoroSwift"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.29.1"),
+    .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.33.0"),
     .package(url: "https://github.com/mlalma/MLXUtilsLibrary.git", exact: "0.0.6"),
   ],
   targets: [
@@ -20,6 +20,7 @@ let package = Package(
       dependencies: [
         .product(name: "MLX", package: "mlx-swift"),
         .product(name: "MLXNN", package: "mlx-swift"),
+        .product(name: "MLXFast", package: "mlx-swift"),
         .product(name: "MLXUtilsLibrary", package: "MLXUtilsLibrary"),
       ],
       resources: [.copy("Resources")]
@@ -32,6 +33,7 @@ let package = Package(
         .product(name: "MLXNN", package: "mlx-swift"),
         .product(name: "MLXRandom", package: "mlx-swift"),
         .product(name: "MLXFFT", package: "mlx-swift"),
+        .product(name: "MLXFast", package: "mlx-swift"),
         .product(name: "MLXUtilsLibrary", package: "MLXUtilsLibrary"),
       ],
       resources: [.copy("Resources")]

@@ -117,11 +117,23 @@ final class IslandAITests: XCTestCase {
         XCTAssertNotEqual(mid.sessionID, ModelChoice.small.sessionID)
         let decoded = try JSONDecoder().decode(ModelChoice.self, from: JSONEncoder().encode(mid))
         XCTAssertEqual(decoded, mid)
-        XCTAssertEqual(try ModelLibrary.family(type: "qwen3_vl", vision: true, repository: "x"), .qwenVL)
-        XCTAssertEqual(try ModelLibrary.family(type: "gemma3", vision: true, repository: "x"), .vision)
-        XCTAssertEqual(try ModelLibrary.family(type: "gemma3_text", vision: false, repository: "x"), .gemmaText)
-        XCTAssertEqual(try ModelLibrary.family(type: "llama", vision: false, repository: "x"), .text)
-        XCTAssertThrowsError(try ModelLibrary.family(type: "mamba", vision: false, repository: "x"))
+    }
+
+    func testSharedModelTypesComeFromMLXItself() async throws {
+        let empty = Data("{}".utf8)
+        let family = { (type: String, vision: Bool) in try await ModelLibrary.family(type: type, vision: vision, configuration: empty, repository: "x") }
+        let qwen = try await family("qwen3_vl", true)
+        XCTAssertEqual(qwen, .qwenVL)
+        let gemma3 = try await family("gemma3_text", false)
+        XCTAssertEqual(gemma3, .gemmaText)
+        let llama = try await family("llama", false)
+        XCTAssertEqual(llama, .text)
+        // New with mlx-swift-lm 3: Gemma 4, Qwen 3.5, GLM 4 MoE, Mamba 2.
+        for type in ["gemma4_text", "qwen3_5", "glm4_moe", "mamba2"] {
+            let kind = try await family(type, false)
+            XCTAssertEqual(kind, .text, type)
+        }
+        do { _ = try await family("inkling2_loop", true); XCTFail("Inkling isn't an MLX Swift architecture") } catch {}
     }
 
     func testSharedModelsFetchOnlyWhatMLXLoads() {

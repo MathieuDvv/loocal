@@ -7,10 +7,14 @@ options:
 packages:
   MLXSwiftLM:
     url: https://github.com/ml-explore/mlx-swift-lm
-    exactVersion: 2.29.3
+    exactVersion: 3.33.0
   MLXSwift:
     url: https://github.com/ml-explore/mlx-swift
-    exactVersion: 0.29.1
+    exactVersion: 0.33.0
+  # Tokenizers for MLX models (mlx-swift-lm 3 leaves the tokenizer to the app).
+  SwiftTransformers:
+    url: https://github.com/huggingface/swift-transformers
+    exactVersion: 1.4.0
   # Kokoro-82M neural text-to-speech, vendored as a static package so MLX links once.
   KokoroSwift:
     path: Vendor/KokoroSwift
@@ -53,6 +57,8 @@ targets:
       product: MLX
     - package: MLXSwift
       product: MLXNN
+    - package: SwiftTransformers
+      product: Tokenizers
     - package: KokoroSwift
       product: KokoroSwift
     - package: StableDiffusion

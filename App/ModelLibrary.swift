@@ -1,4 +1,6 @@
 import Foundation
+import MLXLLM
+import MLXVLM
 
 /// A model shared to Loocal from Hugging Face: how it's listed, and the files to fetch.
 struct SharedModel: Codable, Sendable, Equatable {
@@ -85,11 +87,6 @@ enum ModelLibrary {
         }
     }
 
-    /// Model types MLX runs as text models (mlx-swift-lm 2.29.3's LLM registry).
-    static let textTypes: Set<String> = ["mistral", "llama", "phi", "phi3", "phimoe", "gemma", "gemma2", "gemma3", "gemma3_text", "gemma3n", "qwen2", "qwen3", "qwen3_moe", "starcoder2", "cohere", "openelm", "internlm2", "deepseek_v3", "granite", "granitemoehybrid", "mimo", "glm4", "acereason", "falcon_h1", "bitnet", "smollm3", "ernie4_5", "lfm2", "baichuan_m1", "exaone4", "gpt_oss", "olmoe", "olmo2", "olmo3", "bailing_moe", "lfm2_moe", "nanochat", "afmoe", "jamba_3b", "mistral3"]
-    /// …and as vision models (its VLM registry).
-    static let visionTypes: Set<String> = ["paligemma", "qwen2_vl", "qwen2_5_vl", "qwen3_vl", "idefics3", "gemma3", "smolvlm", "fastvlm", "llava_qwen2", "pixtral", "mistral3"]
-
     /// Looks the model up on Hugging Face and works out what Loocal would download.
     static func fetch(_ repository: String, session: URLSession = .shared) async throws -> SharedModel {
         guard let api = URL(string: "https://huggingface.co/api/models/\(repository)?blobs=true") else { throw IslandError.message("That model link isn’t valid.") }
@@ -131,7 +128,7 @@ enum ModelLibrary {
             let config = (try? JSONSerialization.jsonObject(with: configData)) as? [String: Any] ?? [:]
             let type = (config["model_type"] as? String) ?? info.config?.model_type ?? ""
             bits = bits ?? ((config["quantization"] as? [String: Any])?["bits"] as? Int)
-            family = try Self.family(type: type, vision: config["vision_config"] != nil, repository: info.id)
+            family = try await Self.family(type: type, vision: config["vision_config"] != nil, configuration: configData, repository: info.id)
         }
         let name = shortName(info.id)
         let parameters = parameters(in: info.id) ?? Double(spec.weightBytes) * 8 / Double(bits ?? 16) / 1e9
@@ -147,11 +144,15 @@ enum ModelLibrary {
         return SharedModel(choice: choice, spec: spec)
     }
 
-    static func family(type: String, vision: Bool, repository: String) throws -> ModelChoice.Family {
+    /// What kind of model this is, asking MLX itself which architectures it can build from
+    /// this config, so every model type the engine gains is supported here too.
+    static func family(type: String, vision: Bool, configuration: Data, repository: String) async throws -> ModelChoice.Family {
         if type == "qwen3_vl" { return .qwenVL }
-        if vision, visionTypes.contains(type) { return .vision }
-        if textTypes.contains(type) { return type.hasPrefix("gemma3") && type != "gemma3n" ? .gemmaText : .text }
-        if visionTypes.contains(type) { return .vision }
+        let reads = await VLMTypeRegistry.shared.contains(type, configuration: configuration)
+        let writes = await LLMTypeRegistry.shared.contains(type, configuration: configuration)
+        if vision, reads { return .vision }
+        if writes { return ["gemma3", "gemma3_text"].contains(type) ? .gemmaText : .text }
+        if reads { return .vision }
         throw IslandError.message(type.isEmpty ? "Loocal couldn’t tell what kind of model \(repository) is." : "Loocal can’t run \(type) models yet.")
     }
 

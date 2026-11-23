@@ -257,8 +257,11 @@ final class AppState {
     /// writing on the GPU, then on the CPU as if the app were in the background. Printed
     /// to the console with a BENCH prefix.
     func benchmark() async {
-        guard download.isReady, let directory = try? download.loadingDirectory() else { print("BENCH no model ready"); return }
-        let model = model
+        // `-benchModel <id>` picks the model to measure; otherwise the one selected.
+        let arguments = ProcessInfo.processInfo.arguments
+        let picked = arguments.firstIndex(of: "-benchModel").flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
+        let model = picked.flatMap { id in chatModels.first { $0.id == id } } ?? model
+        guard let download = downloads[model.id], download.isReady, let directory = try? download.loadingDirectory() else { print("BENCH no model ready"); return }
         print("BENCH model \(model.name) free=\(MemoryHeadroom.megabytes)MB")
         for cpu in ComputeTarget.backgroundCPU ? [false, true] : [false] {
             ComputeTarget.mode = cpu ? .background : .foreground

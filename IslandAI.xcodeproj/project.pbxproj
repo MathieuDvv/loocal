@@ -17,10 +17,11 @@
 		20060FECEB55466ADEBBE95B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9CABB2F5182F205DD3CEEA2 /* Connectors.swift */; };
 		21CF67291DCA04EBACAAB024 /* IslandActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 543CF81F3DD5D3E7A0DBAED5 /* IslandActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		30A94069FC37428167BF5A54 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C71349CFF13171A2E55320 /* Theme.swift */; };
+		3796F759DE34710C4B0350A8 /* TokenizerBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27BC172191566708471D8737 /* TokenizerBridge.swift */; };
 		3FFF4EABA197E64AC064751C /* Painter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39249B8F90D2351AB47E609D /* Painter.swift */; };
 		419FFCC80A299C454F63943B /* ToolTrail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00D2BAB9C2DD2CCDB41D004 /* ToolTrail.swift */; };
 		4EE5CB7A137FD195F29564F3 /* SpiralLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229E58158AD92116CD41ADB1 /* SpiralLoader.swift */; };
-		50B7B5744452BF8CFE84CB74 /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = 1C586BCA27A84EA6D3F67A47 /* StableDiffusion */; };
+		50B7B5744452BF8CFE84CB74 /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
 		50F1045A293DE9B896E98301 /* Shortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD14ACE55E6145BA4B6257E /* Shortcuts.swift */; };
 		525EFFF3F7D0CD7DE0821105 /* Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBD10BD5F41D3E6D907AC504 /* Actions.swift */; };
 		554DA5C2F34F46ED42A54646 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F90ACAD1D286FB6BABD9BF13 /* Assets.xcassets */; };
@@ -31,7 +32,7 @@
 		6FA2E9E136A7280F42103590 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 56AF7C53B4769D02685C4B69 /* MLXLMCommon */; };
 		758B476B9673E2C8AD003884 /* ModelManifest.json in Resources */ = {isa = PBXBuildFile; fileRef = A4C3A03A6BBE52F36FB8CA06 /* ModelManifest.json */; };
 		875469A8D7731A5C4803F0B1 /* IslandAIUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 975B181A255C6DE3779F5B9D /* IslandAIUITests.swift */; };
-		8EE51A3EFAF488A0EBB538AD /* KokoroSwift in Frameworks */ = {isa = PBXBuildFile; productRef = EC91100881F7FCCFF46F5B75 /* KokoroSwift */; };
+		8EE51A3EFAF488A0EBB538AD /* Tokenizers in Frameworks */ = {isa = PBXBuildFile; productRef = 29B2EE4A02C56D24068D2176 /* Tokenizers */; };
 		8F6F934AF1D122A4D069CCF3 /* InferenceAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90E1603CA772C8CA5A2000E7 /* InferenceAttributes.swift */; };
 		92CC6707A33C4BB2E360ABD5 /* PaintEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2778C9EAB217FD0CFD6DF1CF /* PaintEffects.swift */; };
 		952EB7183D0B7555EEE6F79E /* Errands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 653CD09EBA0E45B6698638FA /* Errands.swift */; };
@@ -41,6 +42,7 @@
 		99A6E4E39C143EB2B4D34E1E /* InstrumentSerif-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */; };
 		99F34B6FF90C690EBAEF5FE2 /* ModelLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC33BEAB959FE713B7B0F478 /* ModelLibrary.swift */; };
 		A0372D2F8BC53C9A6C33D6F5 /* Islands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F2F36B16ED4D4E0EF6929A8 /* Islands.swift */; };
+		A722A67AF00CAC2BFF39D0DA /* StableDiffusion in Frameworks */ = {isa = PBXBuildFile; productRef = 1C586BCA27A84EA6D3F67A47 /* StableDiffusion */; };
 		AC64771E0C75CED968F124D1 /* MLXVLM in Frameworks */ = {isa = PBXBuildFile; productRef = 58EC7F8B908C0C25A7066F5F /* MLXVLM */; };
 		B00B3B8E7D761CF0799EE6E8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75DA7D97720043E121C40794 /* RootView.swift */; };
 		B409BEA3E9631E70541F079C /* ModelCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0499323687BFB77CDBEB840A /* ModelCompatibility.swift */; };
@@ -136,6 +138,7 @@
 		2657AF9A3420CB45CCC8202E /* VoiceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceSettings.swift; sourceTree = "<group>"; };
 		26A9EEF6FCAADF270EC96FA3 /* LoopGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopGeometry.swift; sourceTree = "<group>"; };
 		2778C9EAB217FD0CFD6DF1CF /* PaintEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaintEffects.swift; sourceTree = "<group>"; };
+		27BC172191566708471D8737 /* TokenizerBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenizerBridge.swift; sourceTree = "<group>"; };
 		28C71349CFF13171A2E55320 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		2918A7036AEB2BE8A68F1259 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B64C6E678E0C889ABF1094F /* InstrumentSerif-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "InstrumentSerif-Regular.ttf"; sourceTree = "<group>"; };
@@ -201,8 +204,9 @@
 				1455DE0A0573F263DBCA3B83 /* MLXLLM in Frameworks */,
 				F234EE4F8032415A54FB5D7E /* MLX in Frameworks */,
 				B4689893A5B1B5716C07FDBF /* MLXNN in Frameworks */,
-				8EE51A3EFAF488A0EBB538AD /* KokoroSwift in Frameworks */,
-				50B7B5744452BF8CFE84CB74 /* StableDiffusion in Frameworks */,
+				8EE51A3EFAF488A0EBB538AD /* Tokenizers in Frameworks */,
+				50B7B5744452BF8CFE84CB74 /* KokoroSwift in Frameworks */,
+				A722A67AF00CAC2BFF39D0DA /* StableDiffusion in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -253,6 +257,7 @@
 				836B53F972A12FC25F957205 /* Speech.swift */,
 				229E58158AD92116CD41ADB1 /* SpiralLoader.swift */,
 				28C71349CFF13171A2E55320 /* Theme.swift */,
+				27BC172191566708471D8737 /* TokenizerBridge.swift */,
 				78B4F4D0D4352D22486C7B11 /* Tools.swift */,
 				A00D2BAB9C2DD2CCDB41D004 /* ToolTrail.swift */,
 				46EC5DF3243789A2A8508E26 /* VoiceConversation.swift */,
@@ -413,6 +418,7 @@
 				2EFC775D79FAA810A07FC584 /* MLXLLM */,
 				FA117BFC99B2E3BDF985F912 /* MLX */,
 				D31998FB6AD68E158E288CA9 /* MLXNN */,
+				29B2EE4A02C56D24068D2176 /* Tokenizers */,
 				EC91100881F7FCCFF46F5B75 /* KokoroSwift */,
 				1C586BCA27A84EA6D3F67A47 /* StableDiffusion */,
 			);
@@ -499,6 +505,7 @@
 			packageReferences = (
 				475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */,
 				01C0E58986AD47A637864C9E /* XCRemoteSwiftPackageReference "mlx-swift-lm" */,
+				C94786D78456487DEF24C039 /* XCRemoteSwiftPackageReference "swift-transformers" */,
 				1E496FF6EE25D72429BDBB46 /* XCLocalSwiftPackageReference "Vendor/KokoroSwift" */,
 				5240AF8AF39AD844DB9CD18D /* XCLocalSwiftPackageReference "Vendor/StableDiffusion" */,
 			);
@@ -586,6 +593,7 @@
 				EAECCCE973B4021F9965812E /* Speech.swift in Sources */,
 				4EE5CB7A137FD195F29564F3 /* SpiralLoader.swift in Sources */,
 				30A94069FC37428167BF5A54 /* Theme.swift in Sources */,
+				3796F759DE34710C4B0350A8 /* TokenizerBridge.swift in Sources */,
 				419FFCC80A299C454F63943B /* ToolTrail.swift in Sources */,
 				E3CF42700E953FABA1720F4D /* Tools.swift in Sources */,
 				136F488D86D3CB4F17F1A640 /* VoiceConversation.swift in Sources */,
@@ -1027,7 +1035,7 @@
 			repositoryURL = "https://github.com/ml-explore/mlx-swift-lm";
 			requirement = {
 				kind = exactVersion;
-				version = 2.29.3;
+				version = 3.33.0;
 			};
 		};
 		475ECF362C24103877C41BFB /* XCRemoteSwiftPackageReference "mlx-swift" */ = {
@@ -1035,7 +1043,15 @@
 			repositoryURL = "https://github.com/ml-explore/mlx-swift";
 			requirement = {
 				kind = exactVersion;
-				version = 0.29.1;
+				version = 0.33.0;
+			};
+		};
+		C94786D78456487DEF24C039 /* XCRemoteSwiftPackageReference "swift-transformers" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/huggingface/swift-transformers";
+			requirement = {
+				kind = exactVersion;
+				version = 1.4.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -1044,6 +1060,11 @@
 		1C586BCA27A84EA6D3F67A47 /* StableDiffusion */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = StableDiffusion;
+		};
+		29B2EE4A02C56D24068D2176 /* Tokenizers */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C94786D78456487DEF24C039 /* XCRemoteSwiftPackageReference "swift-transformers" */;
+			productName = Tokenizers;
 		};
 		2EFC775D79FAA810A07FC584 /* MLXLLM */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -293,10 +293,10 @@ actor InferenceEngine {
             self.plan?.visionBytes = visionBytes
             visionParked = true
         case .gemmaText, .text:
-            loaded = try await LLMModelFactory.shared.load(configuration: configuration)
+            loaded = try await LLMModelFactory.shared.load(from: LocalFolder(), using: LocalTokenizerLoader(), configuration: configuration)
             self.plan = plan
         case .vision:
-            loaded = try await VLMModelFactory.shared.load(configuration: configuration)
+            loaded = try await VLMModelFactory.shared.load(from: LocalFolder(), using: LocalTokenizerLoader(), configuration: configuration)
             self.plan = plan
         case .image:
             throw IslandError.message("\(model.name) makes pictures, and can’t chat.")
@@ -320,7 +320,7 @@ actor InferenceEngine {
         for url in try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) where url.pathExtension == "safetensors" {
             for (key, value) in try loadArrays(url: url) { weights[key] = value }
         }
-        weights = model.sanitize(weights: weights)
+        weights = try model.sanitize(weights: weights)
         if let quantization = base.perLayerQuantization {
             quantize(model: model) { path, _ in
                 weights["\(path).scales"] == nil ? nil : quantization.quantization(layer: path)?.asTuple
@@ -332,11 +332,11 @@ actor InferenceEngine {
         let visionBytes = parameters.filter { $0.0.hasPrefix("vision_tower.") }.reduce(0) { $0 + $1.1.nbytes }
         weights = [:]
         eval(resident)
-        let tokenizer = try await loadTokenizer(configuration: configuration, hub: defaultHubApi)
+        let tokenizer = try await LocalTokenizerLoader().load(from: directory)
         let preprocessor = directory.appendingPathComponent("preprocessor_config.json")
         let processorURL = FileManager.default.fileExists(atPath: preprocessor.path) ? preprocessor : directory.appendingPathComponent("processor_config.json")
         let processorType = try JSONDecoder().decode(BaseProcessorConfiguration.self, from: Data(contentsOf: processorURL)).processorClass
-        let processor = try await VLMProcessorTypeRegistry.shared.createModel(configuration: processorURL, processorType: processorType, tokenizer: tokenizer)
+        let processor = try await VLMProcessorTypeRegistry.shared.createModel(configuration: Data(contentsOf: processorURL), processorType: processorType, tokenizer: tokenizer)
         return (ModelContext(configuration: configuration, model: model, processor: processor, tokenizer: tokenizer), visionBytes)
     }
 
@@ -352,7 +352,7 @@ actor InferenceEngine {
                     weights[key] = value
                 }
             }
-            let vision = context.model.sanitize(weights: weights).filter { $0.key.hasPrefix("vision_tower.") }
+            let vision = try context.model.sanitize(weights: weights).filter { $0.key.hasPrefix("vision_tower.") }
             guard !vision.isEmpty else { return }
             try context.model.update(parameters: ModuleParameters.unflattened(vision), verify: [.noUnusedKeys, .shapeMismatch])
             plan?.visionBytes = vision.values.reduce(0) { $0 + $1.nbytes }
@@ -395,32 +395,20 @@ actor InferenceEngine {
     /// last token for the token iterator. Only the cache is evaluated, so the model never
     /// works out next-word scores for the prompt itself: at 2,048 tokens those alone were
     /// 600 MB (152k-word vocabulary), all at once, on top of everything else.
-    private func prefill(_ input: LMInput, model: any LanguageModel, cache: [KVCache], step: Int, imageToken: Int?, device: Device) async throws -> LMInput {
+    private func prefill(_ input: LMInput, model: any LanguageModel, cache: [KVCache], step: Int, device: Device) async throws -> (LMInput, LMOutput.State?) {
         let flat = input.text.tokens.reshaped([-1])
         let count = flat.dim(0)
         var start = 0
-        if input.image != nil || input.video != nil {
-            // Qwen places an image by counting from the start of the prompt, so everything up
-            // to the last image token goes in one step; the text after it continues from there.
-            let ids = flat.asArray(Int32.self)
-            let last = imageToken.flatMap { token in ids.lastIndex { Int($0) == token } } ?? (count - 2)
-            let end = min(max(last + 1, 1), count - 1)
-            let head = LMInput(text: .init(tokens: flat[0 ..< end].expandedDimensions(axis: 0)), image: input.image, video: input.video)
-            try MLXGate.run {
-                try Device.withDefaultDevice(device) {
-                    _ = try model.prepare(head, cache: cache, windowSize: nil)
-                    eval(cache)
-                }
-            }
-            start = end
-        }
+        // Whatever the model carries from one step to the next (hybrid and recurrent layers,
+        // position offsets) goes along with the cache.
+        var state: LMOutput.State?
         while start < count - 1 {
             try Task.checkCancellation()
             let end = min(start + step, count - 1)
             let chunk = LMInput.Text(tokens: flat[start ..< end].expandedDimensions(axis: 0))
             MLXGate.run {
                 Device.withDefaultDevice(device) {
-                    _ = model(chunk, cache: cache, state: nil)
+                    state = model(chunk, cache: cache, state: state).state
                     eval(cache)
                 }
             }
@@ -429,17 +417,25 @@ actor InferenceEngine {
             if lanes.count > 1 { await Task.yield() }
         }
         let last = flat[(count - 1) ..< count]
-        return LMInput(text: .init(tokens: input.text.tokens.ndim == 2 ? last.expandedDimensions(axis: 0) : last))
+        return (LMInput(text: .init(tokens: input.text.tokens.ndim == 2 ? last.expandedDimensions(axis: 0) : last)), state)
     }
 
-    /// A token iterator over `input`, its prompt read into a fresh cache.
+    /// A token iterator over `input`, its prompt read into a fresh cache. A prompt with a
+    /// photo is read by MLX's own prefill, which places the picture and keeps the position
+    /// offsets it sets (a photo reply has the model to itself, so nothing waits on it).
     private func iterator(for input: LMInput, context: ModelContext, parameters: GenerateParameters, step: Int, device: Device) async throws -> TokenIterator {
-        let cache = context.model.newCache(parameters: parameters)
-        let imageToken = input.image == nil && input.video == nil ? nil : context.tokenizer.convertTokenToId("<|image_pad|>")
-        let last = try await prefill(input, model: context.model, cache: cache, step: step, imageToken: imageToken, device: device)
+        let cache = try context.model.newCache(parameters: parameters)
+        if input.image != nil || input.video != nil {
+            return try MLXGate.run {
+                try Device.withDefaultDevice(device) {
+                    try TokenIterator(input: input, model: context.model, cache: cache, parameters: parameters)
+                }
+            }
+        }
+        let (last, state) = try await prefill(input, model: context.model, cache: cache, step: step, device: device)
         return try MLXGate.run {
             try Device.withDefaultDevice(device) {
-                try TokenIterator(input: last, model: context.model, cache: cache, parameters: parameters)
+                try TokenIterator(input: last, model: context.model, cache: cache, state: state, parameters: parameters)
             }
         }
     }
@@ -555,13 +551,13 @@ actor InferenceEngine {
                         // With several replies writing, the newest gives way so the others fit.
                         let oldest = lanes.values.map(\.seq).min()
                         if lanes.count == 1 || lanes[id]?.seq != oldest {
-                            await update(ToolCall.visible(context.tokenizer.decode(tokens: tokens)), total + tokens.count)
+                            await update(ToolCall.visible(context.tokenizer.decode(tokenIds: tokens)), total + tokens.count)
                             throw IslandError.lowMemory(MemoryHeadroom.megabytes)
                         }
                     }
                 }
                 if tokens.count == 1 || tokens.count % 4 == 0 {
-                    await update(ToolCall.visible(context.tokenizer.decode(tokens: tokens)), total + tokens.count)
+                    await update(ToolCall.visible(context.tokenizer.decode(tokenIds: tokens)), total + tokens.count)
                 }
                 // Take turns with the other replies, a token each.
                 if lanes.count > 1 || !queue.isEmpty { await Task.yield() }
@@ -569,7 +565,7 @@ actor InferenceEngine {
             // Pending GPU work must finish while the app may still use the GPU.
             if onGPU && ComputeTarget.mode == .foreground { Stream.gpu.synchronize() }
             total += tokens.count
-            let text = context.tokenizer.decode(tokens: tokens)
+            let text = context.tokenizer.decode(tokenIds: tokens)
             if round < 2, let call = ToolCall.parse(text), let tool = tools.first(where: { $0.tool.name == call.name }) {
                 await phase(WebSearch.isLocal(tool) ? "Searching the web" : "Using \(tool.tool.name)")
                 let output = (try? await callTool(tool, call.argumentsJSON)) ?? "The tool could not be reached."

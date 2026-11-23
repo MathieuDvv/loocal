@@ -11,7 +11,7 @@ let package = Package(
     .library(name: "StableDiffusion", targets: ["StableDiffusion"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.29.1"),
+    .package(url: "https://github.com/ml-explore/mlx-swift", exact: "0.33.0"),
   ],
   targets: [
     .target(
