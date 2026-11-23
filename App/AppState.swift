@@ -35,6 +35,8 @@ final class AppState {
             else { paintModelID = nil; selectedModelID = newValue }
         }
     }
+    /// Counts the chat selector closing, so the pour waits until it has settled.
+    var selectorClosed = 0
     /// How far each picture being painted has got, by reply id.
     private(set) var paintSteps: [UUID: PaintStep] = [:]
     /// Pictures finished while on screen, which brush themselves in once.

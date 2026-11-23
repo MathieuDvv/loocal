@@ -3,16 +3,19 @@ import UIKit
 
 // MARK: - Entering paint mode
 
-/// A fluid-acrylic pour: marbled paint (blues, lime, cream, coral, ink, copper veins, white
-/// cells) wells up round the model selector, rounded like the pill, and pours down the whole
-/// screen with a dripping front, then drains away. Drawn by `acrylicPour` (Pour.metal).
+/// A fluid-acrylic pour: vivid marbled paint (blues, cyan, lime, yolk, coral, magenta,
+/// violet, ink, gold veins, white cells) wells up round the model selector, rounded like the
+/// pill, and pours down the screen with lobed sides and a dripping front, fading out from
+/// halfway. The pill is drawn on top, as if the paint came out from under it.
+/// The paint is drawn by `acrylicPour` (Pour.metal).
 struct PaintInfusion: View {
-    /// The selector's centre and size, in this view's (full-screen) space.
+    /// The selector's centre and size, in this view's (full-screen) space, and its label.
     let origin: CGPoint
     let pill: CGSize
+    let name: String
     @State private var start = Date.now
 
-    static var duration: Double { 1.85 * pace }
+    static var duration: Double { 1.2 * pace }
     /// `-slowPour` (debug builds) plays it five times slower, to look at it closely.
     #if DEBUG
     static let pace: Double = ProcessInfo.processInfo.arguments.contains("-slowPour") ? 5 : 1
@@ -20,29 +23,46 @@ struct PaintInfusion: View {
     static let pace: Double = 1
     #endif
 
-    /// How far the pour has run down, and how far it has drained, `elapsed` seconds in.
-    private func phases(_ elapsed: Double) -> (fill: Double, drain: Double) {
-        func ease(_ t: Double) -> Double { let t = min(max(t, 0), 1); return t * t * (3 - 2 * t) }
-        // Wells up, then speeds down the screen (gravity); drains from just after it lands.
-        let fill = pow(min(max(elapsed / 0.7, 0), 1), 1.5)
-        return (fill, ease((elapsed - 0.95) / 0.8))
-    }
-
     var body: some View {
         GeometryReader { proxy in
             TimelineView(.animation) { context in
                 let elapsed = context.date.timeIntervalSince(start) / Self.pace
-                let (fill, drain) = phases(elapsed)
-                Rectangle()
-                    .fill(.white)
-                    .colorEffect(ShaderLibrary.acrylicPour(
-                        .float2(proxy.size), .float(elapsed + 3), .float(fill), .float(drain),
-                        .float2(origin), .float2(pill)))
+                // Reaches the bottom in about half a second, speeding up as it falls…
+                let fill = pow(min(max(elapsed / 0.55, 0), 1), 1.4)
+                // …and fades from the halfway mark.
+                let fade = min(max((elapsed - 0.45) / 0.75, 0), 1)
+                ZStack {
+                    Rectangle()
+                        .fill(.white)
+                        .colorEffect(ShaderLibrary.acrylicPour(
+                            .float2(proxy.size), .float(elapsed + 3), .float(fill), .float(0),
+                            .float2(origin), .float2(pill)))
+                        .opacity(1 - fade * fade * (3 - 2 * fade))
+                    PaintedPill(name: name, size: pill)
+                        .position(origin)
+                }
             }
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// The selector as it looks at rest on a picture model, drawn over the pour so the paint
+/// seems to come from beneath it. The same paint, in step, as the real one underneath.
+private struct PaintedPill: View {
+    let name: String
+    let size: CGSize
+
+    var body: some View {
+        Text(name)
+            .font(.geist(15, .medium))
+            .foregroundStyle(.white)
+            .lineLimit(1)
+            .frame(width: size.width, height: size.height)
+            .background(LiquidPaint())
+            .shadow(color: Color(red: 1, green: 0.3, blue: 0.5).opacity(0.25), radius: 12, y: 4)
     }
 }
 

@@ -27,40 +27,49 @@ static float fbm(float2 p) {
     return v;
 }
 
-/// The marbled paint at `uv` (screen units, height = 1) at `time`.
+/// The marbled paint at `uv` (screen units, height = 1) at `time`. The folds churn fast
+/// enough to see them swirl in the second or so the pour lasts.
 static float3 marble(float2 uv, float time, thread float &depth) {
     // Sample from higher up as time passes: the pattern runs down the screen.
-    float2 p = uv * 2.9 + float2(0.0, -time * 0.42);
-    float2 q = float2(fbm(p + float2(0.0, time * 0.05)), fbm(p + float2(5.2, 1.3)));
-    float2 r = float2(fbm(p + 3.6 * q + float2(1.7, 9.2) + time * 0.07), fbm(p + 3.6 * q + float2(8.3, 2.8)));
-    float f = fbm(p + 3.2 * r);
+    float2 p = uv * 2.7 + float2(0.0, -time * 0.9);
+    float2 q = float2(fbm(p + float2(0.0, time * 0.35)), fbm(p + float2(5.2, 1.3) - time * 0.25));
+    float2 r = float2(fbm(p + 3.8 * q + float2(1.7, 9.2) + time * 0.45), fbm(p + 3.8 * q + float2(8.3, 2.8) - time * 0.3));
+    float f = fbm(p + 3.4 * r);
     depth = f;
 
-    const float3 navy   = float3(0.05, 0.07, 0.14);
-    const float3 blue   = float3(0.07, 0.33, 0.88);
-    const float3 sky    = float3(0.45, 0.76, 1.00);
-    const float3 lime   = float3(0.67, 0.86, 0.20);
-    const float3 cream  = float3(0.98, 0.93, 0.62);
-    const float3 coral  = float3(0.97, 0.62, 0.54);
-    const float3 copper = float3(0.78, 0.52, 0.25);
+    // Saturated, like fresh fluid acrylic straight from the cup.
+    const float3 navy    = float3(0.03, 0.04, 0.20);
+    const float3 cobalt  = float3(0.00, 0.30, 1.00);
+    const float3 cyan    = float3(0.05, 0.80, 1.00);
+    const float3 lime    = float3(0.55, 0.97, 0.05);
+    const float3 yolk    = float3(1.00, 0.84, 0.10);
+    const float3 coral   = float3(1.00, 0.36, 0.42);
+    const float3 magenta = float3(0.95, 0.12, 0.62);
+    const float3 violet  = float3(0.50, 0.22, 1.00);
+    const float3 gold    = float3(1.00, 0.66, 0.18);
 
     // Crisp boundaries between colours, like paint that hasn't mixed.
-    float3 col = mix(cream, coral, smoothstep(0.46, 0.54, q.x));
-    col = mix(col, sky, smoothstep(0.45, 0.50, r.x));
-    col = mix(col, blue, smoothstep(0.50, 0.55, f));
+    float3 col = mix(yolk, coral, smoothstep(0.44, 0.52, q.x));
+    col = mix(col, magenta, smoothstep(0.58, 0.64, q.x) * smoothstep(0.45, 0.55, r.y));
+    col = mix(col, cyan, smoothstep(0.45, 0.50, r.x));
+    col = mix(col, cobalt, smoothstep(0.50, 0.55, f));
+    col = mix(col, violet, smoothstep(0.56, 0.62, r.y) * smoothstep(0.52, 0.58, f));
     col = mix(col, lime, smoothstep(0.62, 0.67, r.y) * (1.0 - smoothstep(0.52, 0.56, f)));
     // Deep navy pockets inside the blue.
-    col = mix(col, navy, smoothstep(0.60, 0.66, f) * smoothstep(0.48, 0.56, r.x));
-    // Thin copper veins folded through the paint, and finer white ones.
+    col = mix(col, navy, smoothstep(0.62, 0.68, f) * smoothstep(0.48, 0.56, r.x));
+    // Thin gold veins folded through the paint, and finer white ones.
     float vein = 1.0 - smoothstep(0.0, 0.022, abs(fract(q.y * 5.0 + f * 3.0) - 0.5));
-    col = mix(col, copper, vein * 0.95 * smoothstep(0.4, 0.55, r.y));
+    col = mix(col, gold, vein * 0.95 * smoothstep(0.4, 0.55, r.y));
     float strand = 1.0 - smoothstep(0.0, 0.012, abs(fract(r.x * 7.0 + f * 4.0) - 0.5));
     col = mix(col, float3(1.0), strand * 0.6 * smoothstep(0.5, 0.56, f));
-    // A soft wet sheen along the folds.
-    col += 0.10 * pow(1.0 - abs(fract(f * 3.0) - 0.5) * 2.0, 12.0);
+    // Push the colour further: more saturated than the palette alone.
+    float grey = dot(col, float3(0.299, 0.587, 0.114));
+    col = clamp(mix(float3(grey), col, 1.3), 0.0, 1.0);
+    // A wet sheen along the folds.
+    col += 0.14 * pow(1.0 - abs(fract(f * 3.0) - 0.5) * 2.0, 12.0);
 
     // White cells riding in the blues, like bubbles in a pour.
-    float2 cp = (uv + float2(0.0, -time * 0.18)) * 30.0 + r * 4.0;
+    float2 cp = (uv + float2(0.0, -time * 0.45)) * 30.0 + r * 4.0;
     float2 ci = floor(cp), cf = fract(cp);
     float2 c = float2(hash21(ci + 3.1), hash21(ci + 7.7)) * 0.6 + 0.2;
     float radius = 0.07 + 0.22 * hash21(ci + 1.9);
@@ -76,8 +85,8 @@ static float smin(float a, float b, float k) {
 
 /// `fill`: how far the pour has run down (0…1, past the bottom at 1).
 /// `drain`: how far it has cleared from the top (0…1).
-/// `origin`, `pill`: the selector's centre and size, in points. The paint wells up around
-/// the pill (rounded like it), leaving the pill itself showing, and falls from there.
+/// `origin`, `pill`: the selector's centre and size, in points. The paint wells up round the
+/// pill (rounded like it) and falls from there; the pill is drawn on top.
 [[ stitchable ]] half4 acrylicPour(float2 position, half4 color, float2 size, float time, float fill, float drain, float2 origin, float2 pill) {
     float2 uv = position / size.y;
     float2 o = origin / size.y;
@@ -90,12 +99,14 @@ static float smin(float a, float b, float k) {
     // A collar of paint round the pill, rounded the same way.
     float r = half_pill.y + margin;
     float collar = length(float2(max(abs(x) - (half_pill.x - half_pill.y), 0.0), y)) - r;
-    // The fall: as wide as the collar where it leaves, swelling out to the screen's edges
-    // over a short drop, like a thick pour spreading.
-    float edge = size.x / size.y * 0.5 + 0.03;
-    float t = clamp(y / 0.3, 0.0, 1.0);
-    float width = (half_pill.x + margin) + (edge - half_pill.x) * t * t * (3.0 - 2.0 * t)
-                + 0.012 * (fbm(float2(y * 9.0, time * 0.8)) - 0.5);
+    // The fall: as wide as the collar where it leaves, swelling out over a short drop like a
+    // thick pour spreading, its sides bulging in soft lobes that ripple down, each side its
+    // own way, short of the screen's edges.
+    float edge = size.x / size.y * 0.5;
+    float t = clamp(y / 0.26, 0.0, 1.0);
+    float side = x < 0.0 ? 0.0 : 7.3;
+    float lobes = 0.05 * sin(y * 11.0 - time * 7.0 + side) + 0.07 * (fbm(float2(y * 4.0 - time * 1.5, side)) - 0.5);
+    float width = (half_pill.x + margin) + (edge * 0.88 - half_pill.x) * t * t * (3.0 - 2.0 * t) + lobes * t;
     float fall = max(abs(x) - width, -y);
     float shape = smin(collar, fall, 0.05);
 
@@ -107,9 +118,6 @@ static float smin(float a, float b, float k) {
     // Draining: the top edge runs down after it, ragged in the same way.
     float top = drain * 1.5 - 0.25 + drips * 0.7;
     inside *= drain > 0.0 ? smoothstep(0.0, aa * 2.0, y - top) : 1.0;
-    // The pill itself stays clear: the paint comes out from round it.
-    float hole = length(float2(max(abs(x) - (half_pill.x - half_pill.y), 0.0), y)) - half_pill.y;
-    inside *= smoothstep(-aa, aa, hole);
     if (inside <= 0.0) { return half4(0.0); }
 
     float depth;

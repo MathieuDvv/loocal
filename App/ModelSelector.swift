@@ -13,6 +13,8 @@ struct ModelSelector: View {
     var disabled = false
     @Binding var selection: String
     var dimmed = false
+    /// Told when the carousel closes after a pick.
+    var closed: () -> Void = {}
 
     @State private var expanded = false
     @State private var dragging = false
@@ -75,6 +77,7 @@ struct ModelSelector: View {
             .sensoryFeedback(.impact(weight: .light), trigger: expanded) { _, now in now }
             // Crossing into pictures (or back) lands with more weight than a neighbour.
             .sensoryFeedback(.impact(weight: .medium, intensity: 0.9), trigger: painted)
+            .onChange(of: expanded) { _, open in if !open { closed() } }
             .onAppear { live = dragPosition(index) }
             .onChange(of: selection) { _, _ in if !dragging { withAnimation(spring) { live = dragPosition(index) } } }
             .onChange(of: options.map(\.id)) { _, _ in if !dragging { live = dragPosition(index) } }

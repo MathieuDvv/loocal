@@ -49,7 +49,8 @@ struct RootView: View {
     @State private var settingsPath: [SettingsPage] = []
     /// The paint pouring out of the selector after a switch into picture models.
     @State private var pour: Pour?
-    private struct Pour { let id = UUID(); let origin: CGPoint; let pill: CGSize }
+    private struct Pour { let id = UUID(); let origin: CGPoint; let pill: CGSize; let name: String }
+    @State private var pendingPour = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("appearance") private var appearance: Appearance = .system
 
@@ -99,17 +100,26 @@ struct RootView: View {
         // A temporary chat is always dark, so it's obvious at a glance you're off the record.
         .preferredColorScheme(tab == .chat && store.isTemporary ? .dark : appearance.scheme)
         .animation(.smooth(duration: 0.35), value: appearance)
-        // Picking a picture model pours paint out of the selector for a moment.
+        // Picking a picture model pours paint out of the selector for a moment, once the
+        // selector has closed back to its pill.
         .overlay {
             if let pour {
-                PaintInfusion(origin: pour.origin, pill: pour.pill).id(pour.id)
+                PaintInfusion(origin: pour.origin, pill: pour.pill, name: pour.name).id(pour.id)
             }
         }
         .onChange(of: store.isPainting) { _, painting in
-            guard painting, tab == .chat, !reduceMotion, let center = ModelSelector.screenCenter else { pour = nil; return }
-            let wash = Pour(origin: center, pill: ModelSelector.restingSize(store.paintModel?.name ?? ""))
-            pour = wash
+            pendingPour = painting && tab == .chat && !reduceMotion
+            if !painting { pour = nil }
+        }
+        .onChange(of: store.selectorClosed) { _, _ in
+            guard pendingPour, store.isPainting, let name = store.paintModel?.name else { return }
+            pendingPour = false
             Task {
+                // Let the capsule's closing spring settle onto its resting size first.
+                try? await Task.sleep(for: .milliseconds(220))
+                guard store.isPainting, let center = ModelSelector.screenCenter else { return }
+                let wash = Pour(origin: center, pill: ModelSelector.restingSize(name), name: name)
+                pour = wash
                 try? await Task.sleep(for: .seconds(PaintInfusion.duration + 0.1))
                 if pour?.id == wash.id { pour = nil }
             }
@@ -539,7 +549,8 @@ struct ChatView: View {
 
     /// The model selector, with the chat fading out under it as it scrolls up.
     private var selectorBar: some View {
-        ModelSelector(options: store.models, disabled: store.isWorking, selection: $store.selectorID, dimmed: !(store.paintDownload ?? store.download).isReady)
+        ModelSelector(options: store.models, disabled: store.isWorking, selection: $store.selectorID, dimmed: !(store.paintDownload ?? store.download).isReady,
+                      closed: { store.selectorClosed &+= 1 })
             .frame(maxWidth: .infinity)
             .padding(.top, 6).padding(.bottom, 8)
             .overlay(alignment: .bottom) {
