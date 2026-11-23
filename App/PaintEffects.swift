@@ -5,8 +5,8 @@ import UIKit
 
 /// A fluid-acrylic pour: vivid marbled paint (blues, cyan, lime, yolk, coral, magenta,
 /// violet, ink, gold veins, white cells) wells up round the model selector, rounded like the
-/// pill, and pours down the screen with lobed sides and a dripping front, fading out from
-/// halfway. The pill is drawn on top, as if the paint came out from under it.
+/// pill, and pours down to fill the screen with a dripping front, then drains from the top
+/// while fading out. The pill is drawn on top, as if the paint came out from under it.
 /// The paint is drawn by `acrylicPour` (Pour.metal).
 struct PaintInfusion: View {
     /// The selector's centre and size, in this view's (full-screen) space, and its label.
@@ -15,7 +15,7 @@ struct PaintInfusion: View {
     let name: String
     @State private var start = Date.now
 
-    static var duration: Double { 1.2 * pace }
+    static var duration: Double { 1.3 * pace }
     /// `-slowPour` (debug builds) plays it five times slower, to look at it closely.
     #if DEBUG
     static let pace: Double = ProcessInfo.processInfo.arguments.contains("-slowPour") ? 5 : 1
@@ -27,15 +27,16 @@ struct PaintInfusion: View {
         GeometryReader { proxy in
             TimelineView(.animation) { context in
                 let elapsed = context.date.timeIntervalSince(start) / Self.pace
-                // Reaches the bottom in about half a second, speeding up as it falls…
+                // Reaches the bottom in about half a second, speeding up as it falls, drains
+                // from the top right after, and fades from the halfway mark as it goes.
                 let fill = pow(min(max(elapsed / 0.55, 0), 1), 1.4)
-                // …and fades from the halfway mark.
-                let fade = min(max((elapsed - 0.45) / 0.75, 0), 1)
+                let drain = pow(min(max((elapsed - 0.5) / 0.8, 0), 1), 1.3)
+                let fade = min(max((elapsed - 0.65) / 0.65, 0), 1)
                 ZStack {
                     Rectangle()
                         .fill(.white)
                         .colorEffect(ShaderLibrary.acrylicPour(
-                            .float2(proxy.size), .float(elapsed + 3), .float(fill), .float(0),
+                            .float2(proxy.size), .float(elapsed + 3), .float(fill), .float(drain),
                             .float2(origin), .float2(pill)))
                         .opacity(1 - fade * fade * (3 - 2 * fade))
                     PaintedPill(name: name, size: pill)

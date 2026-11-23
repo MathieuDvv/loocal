@@ -100,13 +100,15 @@ static float smin(float a, float b, float k) {
     float r = half_pill.y + margin;
     float collar = length(float2(max(abs(x) - (half_pill.x - half_pill.y), 0.0), y)) - r;
     // The fall: as wide as the collar where it leaves, swelling out over a short drop like a
-    // thick pour spreading, its sides bulging in soft lobes that ripple down, each side its
-    // own way, short of the screen's edges.
+    // thick pour spreading to fill the screen, its shoulders bulging in soft lobes that ripple
+    // down, each side its own way.
     float edge = size.x / size.y * 0.5;
     float t = clamp(y / 0.26, 0.0, 1.0);
     float side = x < 0.0 ? 0.0 : 7.3;
     float lobes = 0.05 * sin(y * 11.0 - time * 7.0 + side) + 0.07 * (fbm(float2(y * 4.0 - time * 1.5, side)) - 0.5);
-    float width = (half_pill.x + margin) + (edge * 0.88 - half_pill.x) * t * t * (3.0 - 2.0 * t) + lobes * t;
+    // Past the screen's edges once it has spread, so the sheet fills the width; the lobes
+    // show on the shoulders on the way out.
+    float width = (half_pill.x + margin) + (edge + 0.09 - half_pill.x) * t * t * (3.0 - 2.0 * t) + lobes * t;
     float fall = max(abs(x) - width, -y);
     float shape = smin(collar, fall, 0.05);
 
