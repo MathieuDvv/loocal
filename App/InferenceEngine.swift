@@ -166,6 +166,23 @@ actor InferenceEngine {
     /// How many replies are writing or waiting.
     var activeCount: Int { lanes.count + queue.count }
 
+    /// A picture is being painted: it needs the memory, so no chat model loads meanwhile.
+    private var painting = false
+
+    /// Makes room for painting: waits for replies already writing to finish, then lets the
+    /// chat model go. Replies asked for meanwhile wait until `endPainting`.
+    func beginPainting(phase: @Sendable (String) async -> Void) async {
+        painting = true
+        var waiting = false
+        while !(lanes.isEmpty && holders.isEmpty && loading == nil) {
+            if !waiting { await phase("Waiting for replies to finish"); waiting = true }
+            try? await Task.sleep(for: .milliseconds(200))
+        }
+        drop()
+    }
+
+    func endPainting() { painting = false }
+
     /// Releases the model, unless a reply is still using it.
     func unload() {
         guard lanes.isEmpty, queue.isEmpty, holders.isEmpty, loading == nil else { return }
@@ -233,6 +250,12 @@ actor InferenceEngine {
             try Task.checkCancellation()
             if let loading {
                 _ = try? await loading.value
+                continue
+            }
+            if painting {
+                // Both wouldn't fit in what iOS allows: the reply waits for the picture.
+                if !waiting { await phase("Waiting for the painting"); waiting = true }
+                try await Task.sleep(for: .milliseconds(200))
                 continue
             }
             if loadedID == model.id, let context {

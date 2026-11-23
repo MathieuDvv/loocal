@@ -78,17 +78,22 @@ actor Painter {
         let client = HubClient(directory: directory)
         GPU.set(cacheLimit: 64 * 1024 * 1024)
         defer { GPU.clearCache() }
-        guard let generator = try base.textToImageGenerator(client: client, configuration: LoadConfiguration(float16: true, quantize: quantize)) else {
+        // SD 1.x/2.x decoders run fine in half precision, which halves the biggest moment of
+        // the whole generation (SDXL's decoder needs float32 to stay clean).
+        let configuration = LoadConfiguration(float16: true, quantize: quantize, decoderFloat16: pipeline == .base)
+        // The only reference to the models, so letting it go below really frees them.
+        var generator = try base.textToImageGenerator(client: client, configuration: configuration)
+        guard generator != nil else {
             throw IslandError.message("\(model.name) couldn’t be prepared for painting.")
         }
         try Task.checkCancellation()
-        generator.ensureLoaded()
+        generator?.ensureLoaded()
         let (steps, cfg) = Self.settings(for: model.id, pipeline: pipeline)
         var parameters = EvaluateParameters(cfgWeight: cfg, steps: steps, latentSize: [Self.side / 8, Self.side / 8], seed: seed)
         parameters.prompt = prompt
         var last: MLXArray?
         var done = 0
-        for xt in generator.generateLatents(parameters: parameters) {
+        for xt in generator!.generateLatents(parameters: parameters) {
             try Task.checkCancellation()
             eval(xt)
             last = xt
@@ -96,7 +101,13 @@ actor Painter {
             await step(done, steps)
         }
         guard let last else { throw IslandError.message("The picture couldn’t be painted.") }
-        let decoded = generator.detachedDecoder()(last)
+        // Turning the result into pixels is the peak: the UNet and text encoder (most of the
+        // weights) are let go first, and only the decoder stays. Measured on SD Turbo, this and
+        // the half-precision decoder take the peak from 6.9 GB (past what iOS allows) to 3.2 GB.
+        let decoder = generator!.detachedDecoder()
+        generator = nil
+        GPU.clearCache()
+        let decoded = decoder(last)
         let pixels = (decoded[0] * 255).asType(.uint8)
         eval(pixels)
         return Image(pixels).asCGImage()

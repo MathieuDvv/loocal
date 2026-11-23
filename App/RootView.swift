@@ -173,6 +173,7 @@ struct RootView: View {
         #endif
         #if DEBUG
         .task { if ProcessInfo.processInfo.arguments.contains("-bench") { await store.benchmark() } }
+        .task { if ProcessInfo.processInfo.arguments.contains("-benchPaint") { await store.benchmarkPaint() } }
         #endif
         // Routines whose time came while Loocal was open run without waiting for a relaunch.
         .task {
@@ -989,10 +990,10 @@ struct EmptyChatView: View {
                 .frame(maxWidth: .infinity)
                 .frame(maxHeight: pageWidth * 668 / 800)
                 .overlay(alignment: .top) {
+                    // A fixed full-width size: a shorter box crops it, never shrinks it.
                     Image("PaintVillage")
                         .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: .infinity)
+                        .frame(width: pageWidth, height: pageWidth * 668 / 800)
                 }
                 .clipped()
                 // Its foot fades into the page, just above the prompt.

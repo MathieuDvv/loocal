@@ -1,5 +1,6 @@
 // swift-tools-version: 6.2
 // Vendored StableDiffusion from mlx-swift-examples (MIT, ml-explore) at ef1084dd. Changes:
+// an optional float16 image decoder (LoadConfiguration.decoderFloat16);
 // reads a model from a local folder (Loocal downloads it) instead of Hugging Face's client,
 // prefers .fp16 weight files, and builds against the mlx-swift the app already pins.
 import PackageDescription

@@ -43,13 +43,23 @@ public struct LoadConfiguration: Sendable {
     /// quantize weights
     public var quantize = false
 
+    /// Run the image decoder in float16 too (upstream keeps it in float32). Its convolutions
+    /// at full resolution are the peak of a whole generation; half precision halves it.
+    /// Fine for SD 1.x/2.x decoders.
+    public var decoderFloat16 = false
+
     public var dType: DType {
         float16 ? .float16 : .float32
     }
 
-    public init(float16: Bool = true, quantize: Bool = false) {
+    public var decoderDType: DType {
+        decoderFloat16 ? .float16 : .float32
+    }
+
+    public init(float16: Bool = true, quantize: Bool = false, decoderFloat16: Bool = false) {
         self.float16 = float16
         self.quantize = quantize
+        self.decoderFloat16 = decoderFloat16
     }
 }
 
@@ -187,7 +197,8 @@ public struct StableDiffusionConfiguration: Sendable {
         defaultParameters: { EvaluateParameters(cfgWeight: 0, steps: 2) },
         factory: { client, sdConfiguration, loadConfiguration in
             let sd = try StableDiffusionXL(
-                client: client, configuration: sdConfiguration, dType: loadConfiguration.dType)
+                client: client, configuration: sdConfiguration, dType: loadConfiguration.dType,
+                autoencoderDType: loadConfiguration.decoderDType)
             if loadConfiguration.quantize {
                 quantize(model: sd.textEncoder, filter: { k, m in m is Linear })
                 quantize(model: sd.textEncoder2, filter: { k, m in m is Linear })
@@ -214,7 +225,8 @@ public struct StableDiffusionConfiguration: Sendable {
         defaultParameters: { EvaluateParameters(cfgWeight: 7.5, steps: 50) },
         factory: { client, sdConfiguration, loadConfiguration in
             let sd = try StableDiffusionBase(
-                client: client, configuration: sdConfiguration, dType: loadConfiguration.dType)
+                client: client, configuration: sdConfiguration, dType: loadConfiguration.dType,
+                autoencoderDType: loadConfiguration.decoderDType)
             if loadConfiguration.quantize {
                 quantize(model: sd.textEncoder, filter: { k, m in m is Linear })
                 quantize(model: sd.unet, groupSize: 32, bits: 8)

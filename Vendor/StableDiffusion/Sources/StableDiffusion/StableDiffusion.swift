@@ -214,6 +214,7 @@ open class StableDiffusion {
 
     internal init(
         client: HubClient, configuration: StableDiffusionConfiguration, dType: DType,
+        autoencoderDType: DType = .float32,
         diffusionConfiguration: DiffusionConfiguration? = nil, unet: UNetModel? = nil,
         textEncoder: CLIPTextModel? = nil, autoencoder: Autoencoder? = nil,
         sampler: SimpleEulerSampler? = nil, tokenizer: CLIPTokenizer? = nil
@@ -227,10 +228,10 @@ open class StableDiffusion {
             try textEncoder
             ?? loadTextEncoder(client: client, configuration: configuration, dType: dType)
 
-        // note: autoencoder uses float32 weights
+        // note: the autoencoder uses float32 weights unless asked for float16 (Loocal does)
         self.autoencoder =
             try autoencoder
-            ?? loadAutoEncoder(client: client, configuration: configuration, dType: .float32)
+            ?? loadAutoEncoder(client: client, configuration: configuration, dType: autoencoderDType)
 
         if let sampler {
             self.sampler = sampler
@@ -300,9 +301,10 @@ open class StableDiffusion {
 /// Implementation of ``StableDiffusion`` for the `stabilityai/stable-diffusion-2-1-base` model.
 open class StableDiffusionBase: StableDiffusion, TextToImageGenerator {
 
-    public init(client: HubClient, configuration: StableDiffusionConfiguration, dType: DType) throws
+    public init(client: HubClient, configuration: StableDiffusionConfiguration, dType: DType,
+                autoencoderDType: DType = .float32) throws
     {
-        try super.init(client: client, configuration: configuration, dType: dType)
+        try super.init(client: client, configuration: configuration, dType: dType, autoencoderDType: autoencoderDType)
     }
 
     func conditionText(text: String, imageCount: Int, cfgWeight: Float, negativeText: String?)
@@ -347,7 +349,8 @@ open class StableDiffusionXL: StableDiffusion, TextToImageGenerator, ImageToImag
     let textEncoder2: CLIPTextModel
     let tokenizer2: CLIPTokenizer
 
-    public init(client: HubClient, configuration: StableDiffusionConfiguration, dType: DType) throws
+    public init(client: HubClient, configuration: StableDiffusionConfiguration, dType: DType,
+                autoencoderDType: DType = .float32) throws
     {
         let diffusionConfiguration = try loadConfiguration(
             client: client, configuration: configuration, key: .diffusionConfig,
@@ -364,6 +367,7 @@ open class StableDiffusionXL: StableDiffusion, TextToImageGenerator, ImageToImag
 
         try super.init(
             client: client, configuration: configuration, dType: dType,
+            autoencoderDType: autoencoderDType,
             diffusionConfiguration: diffusionConfiguration, sampler: sampler)
     }
 

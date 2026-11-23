@@ -1,4 +1,5 @@
 import Foundation
+import os
 import Observation
 import PDFKit
 import UIKit
@@ -261,6 +262,33 @@ final class AppState {
     /// Device benchmark (`-bench` launch argument): times loading, prompt reading and
     /// writing on the GPU, then on the CPU as if the app were in the background. Printed
     /// to the console with a BENCH prefix.
+    /// Debug: paints one picture with the picked picture model (`-benchModel <id>` to choose)
+    /// and prints the memory left at each step.
+    func benchmarkPaint() async {
+        let arguments = ProcessInfo.processInfo.arguments
+        let picked = arguments.firstIndex(of: "-benchModel").flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
+        guard let model = models.first(where: { $0.id == (picked ?? paintModelID) && !$0.chats }), let download = downloads[model.id], download.isReady else {
+            print("PAINT no picture model ready"); return
+        }
+        print("PAINT model \(model.name) free=\(MemoryHeadroom.megabytes)MB ceiling=\(MemoryHeadroom.ceiling / 1_048_576)MB")
+        let start = Date()
+        let lowest = OSAllocatedUnfairLock(initialState: Int.max)
+        let watch = Task.detached {
+            while !Task.isCancelled { lowest.withLock { $0 = min($0, MemoryHeadroom.megabytes) }; try? await Task.sleep(for: .milliseconds(50)) }
+        }
+        do {
+            let picture = try await painter.paint(model: model, directory: download.directory, prompt: "a calm mountain lake at dawn, impressionist oil painting", seed: 7) { done, total in
+                print("PAINT step \(done)/\(total) at \(String(format: "%.1f", Date().timeIntervalSince(start)))s free=\(MemoryHeadroom.megabytes)MB")
+            }
+            watch.cancel()
+            print("PAINT ok \(picture.width)x\(picture.height) in \(String(format: "%.1f", Date().timeIntervalSince(start)))s minFree=\(lowest.withLock { $0 })MB")
+        } catch {
+            watch.cancel()
+            print("PAINT failed \(error.localizedDescription) minFree=\(lowest.withLock { $0 })MB")
+        }
+        print("PAINT done")
+    }
+
     func benchmark() async {
         // `-benchModel <id>` picks the model to measure; otherwise the one selected.
         let arguments = ProcessInfo.processInfo.arguments
@@ -880,8 +908,9 @@ final class AppState {
         jobs[replyID] = Task {
             var success = false
             do {
-                // The chat model and voice engine step aside: painting wants the memory.
-                await engine.unload()
+                // The chat model and voice engine step aside: painting wants the memory, and no
+                // reply loads a model again until the picture is done.
+                await engine.beginPainting { phase in await self.setPhase(replyID, phase) }
                 await KokoroEngine.shared.unload()
                 let picture = try await painter.paint(model: model, directory: directory, prompt: prompt) { done, total in
                     await MainActor.run {
@@ -911,6 +940,7 @@ final class AppState {
                     if !reason.isEmpty { notice = reason }
                 } else { self.error = error.localizedDescription }
             }
+            await engine.endPainting()
             paintSteps[replyID] = nil
             replying.remove(conversationID)
             endJob(replyID, success: success, finalPhase: success ? "Picture ready" : "Stopped")
